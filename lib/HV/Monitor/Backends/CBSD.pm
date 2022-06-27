@@ -76,30 +76,37 @@ sub run {
 	my $return_hash = {
 		VMs    => {},
 		totals => {
-			'usertime'   => 0,
-			'pmem'       => 0,
-			'mem_use'    => 0,
-			'oublk'      => 0,
-			'minflt'     => 0,
-			'pcpu'       => 0,
-			'mem_alloc'  => 0,
-			'nvcsw'      => 0,
-			'snaps'      => 0,
-			'rss'        => 0,
-			'snaps_size' => 0,
-			'cpus'       => 0,
-			'cow'        => 0,
-			'nivcsw'     => 0,
-			'systime'    => 0,
-			'dsiz'       => 0,
-			'vsz'        => 0,
-			'etimes'     => 0,
-			'majflt'     => 0,
-			'inblk'      => 0,
-			'nswap'      => 0,
-			'on'         => 0,
-			'off'        => 0,
-			'unknown'    => 0,
+			'usertime'    => 0,
+			'pmem'        => 0,
+			'mem_use'     => 0,
+			'oublk'       => 0,
+			'minflt'      => 0,
+			'pcpu'        => 0,
+			'mem_alloc'   => 0,
+			'nvcsw'       => 0,
+			'snaps'       => 0,
+			'rss'         => 0,
+			'snaps_size'  => 0,
+			'cpus'        => 0,
+			'cow'         => 0,
+			'nivcsw'      => 0,
+			'systime'     => 0,
+			'dsiz'        => 0,
+			'vsz'         => 0,
+			'etimes'      => 0,
+			'majflt'      => 0,
+			'inblk'       => 0,
+			'nswap'       => 0,
+			'on'          => 0,
+			'off'         => 0,
+			'off_hard'    => 0,
+			'off_soft'    => 0,
+			'unknown'     => 0,
+			'paused'      => 0,
+			'crashed'     => 0,
+			'blocked'     => 0,
+			'nostate'     => 0,
+			'pmsuspended' => 0,
 		}
 	};
 
@@ -238,7 +245,10 @@ sub run {
 		elsif ( $status =~ /^[Oo][Ff][Ff]/ ) {
 			$vm_info->{status_int} = 1;
 			$return_hash->{totals}{off}++;
-		}else {
+		}
+		else {
+			# CBSD also has some mode called maintenance and slave,
+			# but it is very unclear what those are
 			$vm_info->{status_int} = 2;
 			$return_hash->{totals}{unknown}++;
 		}
