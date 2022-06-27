@@ -1,7 +1,57 @@
 #!/usr/bin/env perl
 
-
 use JSON;
 use strict;
 use warnings;
 use Getopt::Long;
+use JSON;
+use HV::Monitor;
+
+sub version {
+	print "hv_monitor v. 0.0.1\n";
+}
+
+sub help {
+	&version;
+
+	print '
+-b <backend>    The backend to use.
+
+
+
+Backends include by default...
+CBSD - Default on FreeBSD
+Libvirt - Default on Linux
+';
+}
+
+my $backend;
+if ( $^O eq 'freebsd' ) {
+	$backend = 'CBSD';
+}
+elsif ( $^O eq 'linux' ) {
+	$backend = 'Libvirt';
+}
+
+# get the commandline options
+my $help    = 0;
+my $version = 0;
+Getopt::Long::Configure('no_ignore_case');
+Getopt::Long::Configure('bundling');
+GetOptions(
+	'version' => \$version,
+	'v'       => \$version,
+	'help'    => \$help,
+	'h'       => \$help,
+	'b=s'     => \$backend,
+);
+
+my $hm = HV::Monitor->new( { backend => $backend } );
+
+eval { $hm->load; };
+if ($@) {
+	print encode_json( { version => 1, data => {}, error => 1, errorString => 'load failed... ' . $@ } ) . "\n";
+	exit 1;
+}
+
+print encode_json($hm->run)."\n";

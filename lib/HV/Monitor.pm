@@ -49,6 +49,7 @@ sub new {
 
 	my $self = {
 				version=>1,
+				backend=>$config->{backend},
 	};
 	bless $self;
 
@@ -74,8 +75,8 @@ sub load {
 	my $backend_test;
 	my $usable;
 	my $test_string = '
-use ' . $self->{backend} . ';
-$backend_test=' . $self->{backend} . '->new;
+use HV::Monitor::Backends::' . $self->{backend} . ';
+$backend_test=HV::Monitor::Backends::' . $self->{backend} . '->new;
 $usable=$backend_test->usable;
 ';
 	eval($test_string);

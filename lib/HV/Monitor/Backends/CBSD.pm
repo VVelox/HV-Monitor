@@ -1,4 +1,4 @@
-package HV::Monitor::Backends::CBSD;
+ypackage HV::Monitor::Backends::CBSD;
 
 use 5.006;
 use strict;
@@ -38,7 +38,7 @@ Initiates the backend object.
 =cut
 
 sub new {
-	my $self = { };
+	my $self = { version => 1, };
 	bless $self;
 
 	return $self;
@@ -54,7 +54,16 @@ sub run {
 	my $self = $_[0];
 
 	my $bls_raw
-		= `cbsd bls header=0 node= display=jname,jid,vm_ram,vm_curmem,vm_cpus,pcpu,vm_os_type,ip4_addr,status,vnc alljails=0 | sed -e 's/\x1b\[[0-9;]*m//g'`;
+		= `/bin/sh -c "cbsd bls header=0 node= display=jname,jid,vm_ram,vm_curmem,vm_cpus,pcpu,vm_os_type,ip4_addr,status,vnc alljails=0 2> /dev/null" | sed -e 's/\x1b\[[0-9;]*m//g'`;
+	if ( $? != 0 ) {
+		return {
+			data        => {},
+			version     => $self->{version},
+			error       => 2,
+			errorString =>
+				'"cbsd bls header=0 node= display=jname,jid,vm_ram,vm_curmem,vm_cpus,pcpu,vm_os_type,ip4_addr,status,vnc alljails=0" exited non-zero',
+		};
+	}
 
 	#remove color codes
 	$bls_raw =~ s/\^.{1,7}?m//g;
@@ -93,9 +102,9 @@ sub run {
 
 	# values that should be totaled
 	my @total = (
-		'usertime', 'pmem',  'mem_use', 'oublk',      'minflt', 'pcpu', 'mem_alloc', 'nvcsw',
-		'snaps', 'rss',     'snaps_size', 'cpus',   'cow',  'nivcsw',    'systime',
-		'dsiz',     'vsz',   'etimes',  'majflt',     'inblk',  'nswap'
+		'usertime', 'pmem',   'mem_use',    'oublk', 'minflt', 'pcpu',   'mem_alloc', 'nvcsw',
+		'snaps',    'rss',    'snaps_size', 'cpus',  'cow',    'nivcsw', 'systime',   'dsiz',
+		'vsz',      'etimes', 'majflt',     'inblk', 'nswap'
 	);
 
 	my @bls_split = split( /\n/, $bls_raw );
@@ -117,14 +126,14 @@ sub run {
 			console_type => 'vnc',
 			console      => $vnc,
 			snaps_size   => 0,
-					   ifs          => [],
-					   syscw=>0,
-					   syscw=>0,
-					   rchar=>0,
-					   wchar=>0,
-					   rbytes=>0,
-					   wbytes=>0,
-					   cwbytes=>0,
+			ifs          => [],
+			syscw        => 0,
+			syscw        => 0,
+			rchar        => 0,
+			wchar        => 0,
+			rbytes       => 0,
+			wbytes       => 0,
+			cwbytes      => 0,
 		};
 
 		my $additional
@@ -132,11 +141,11 @@ sub run {
 
 		chomp($additional);
 		(
-			$pid,                $vm_info->{etimes},   $vm_info->{pmem},   $vm_info->{cow},
-			$vm_info->{dsiz},    $vm_info->{majflt},   $vm_info->{minflt}, $vm_info->{nice},
-			$vm_info->{nivcsw},  $vm_info->{nswap},  $vm_info->{nvcsw},
-			$vm_info->{inblk},   $vm_info->{oublk},    $vm_info->{pri},    $vm_info->{rss},
-			$vm_info->{systime}, $vm_info->{usertime}, $vm_info->{vsz}
+			$pid,                 $vm_info->{etimes}, $vm_info->{pmem},   $vm_info->{cow},
+			$vm_info->{dsiz},     $vm_info->{majflt}, $vm_info->{minflt}, $vm_info->{nice},
+			$vm_info->{nivcsw},   $vm_info->{nswap},  $vm_info->{nvcsw},  $vm_info->{inblk},
+			$vm_info->{oublk},    $vm_info->{pri},    $vm_info->{rss},    $vm_info->{systime},
+			$vm_info->{usertime}, $vm_info->{vsz}
 		) = split( /[\ \t]+/, $additional );
 
 		# zero anything undefined
@@ -195,14 +204,19 @@ sub run {
 		}
 
 		foreach my $to_total (@total) {
-			$return_hash->{totals}{$to_total}=$return_hash->{totals}{$to_total} + $vm_info->{$to_total};
+			$return_hash->{totals}{$to_total} = $return_hash->{totals}{$to_total} + $vm_info->{$to_total};
 		}
 
 		$return_hash->{VMs}{$vm} = $vm_info;
 		push( @VMs, $vm );
 	}
 
-	return $return_hash;
+	return {
+		version => $self->{version},
+		error       => 0,
+		errorString => '',
+		data        => $return_hash,
+	};
 }
 
 =head2 usable
@@ -221,14 +235,14 @@ sub usable {
 
 	# Make sure we are on a OS on which ZFS is usable on.
 	if ( $^O !~ 'freebsd' ) {
-		die '$^O is "'.$^O.'" and not "freebsd"';
+		die '$^O is "' . $^O . '" and not "freebsd"';
 	}
 
 	# make sure we can locate cbsd
 	# Written like this as which on some Linux distros such as CentOS 7 is broken.
 	my $cmd_bin = `/bin/sh -c 'which cbsd 2> /dev/null'`;
 	if ( $? != 0 ) {
-		die 'The command "cbsd" is not in the path... '.$ENV{PATH};
+		die 'The command "cbsd" is not in the path... ' . $ENV{PATH};
 	}
 
 	return 1;
