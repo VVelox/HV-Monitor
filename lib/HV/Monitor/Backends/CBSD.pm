@@ -188,15 +188,19 @@ sub run {
 				my ( $jname, $snapname, $snap_creation, $refer ) = split( /[\ \t]+/, $snaplist[$snaplist_int] );
 
 				if ( $refer =~ /[Kk]$/ ) {
+					$refer =~ s/[Kk]$//;
 					$refer = $refer * 1000;
 				}
 				elsif ( $refer =~ /[Mm]$/ ) {
+					$refer =~ s/[Mm]$//;
 					$refer = $refer * 1000000;
 				}
 				elsif ( $refer =~ /[Gg]$/ ) {
+					$refer =~ s/[Gg]$//;
 					$refer = $refer * 1000000000;
 				}
 				elsif ( $refer =~ /[Tt]$/ ) {
+					$refer =~ s/[Tt]$//;
 					$refer = $refer * 1000000000000;
 				}
 
