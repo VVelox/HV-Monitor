@@ -159,7 +159,7 @@ sub run {
 
 		if ( $status =~ /^On/ ) {
 			$vm_info->{status_int} = 0;
-			$vm_info->{totals}{on}++;
+			$return_hash->{totals}{on}++;
 			my $additional
 				= `ps S -o pid,etimes,%mem,cow,dsiz,majflt,minflt,nice,nivcsw,nswap,nvcsw,inblk,oublk,pri,rss,systime,usertime,vsz | grep '^ *'$pid'[\ \t]'`;
 
@@ -237,10 +237,10 @@ sub run {
 		}
 		elsif ( $status =~ /^[Oo][Ff][Ff]/ ) {
 			$vm_info->{status_int} = 1;
-			$vm_info->{totals}{off}++;
+			$return_hash->{totals}{off}++;
 		}else {
 			$vm_info->{status_int} = 2;
-			$vm_info->{totals}{unknown}++;
+			$return_hash->{totals}{unknown}++;
 		}
 
 		$return_hash->{VMs}{$vm} = $vm_info;
