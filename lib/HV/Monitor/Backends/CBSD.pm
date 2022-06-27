@@ -96,7 +96,7 @@ sub run {
 			'etimes'     => 0,
 			'majflt'     => 0,
 			'inblk'      => 0,
-			'nswap'      => 0
+			'nswap'      => 0,
 		}
 	};
 
@@ -134,77 +134,101 @@ sub run {
 			rbytes       => 0,
 			wbytes       => 0,
 			cwbytes      => 0,
+			etimes       => 0,
+			pmem         => 0,
+			cow          => 0,
+			dsiz         => 0,
+			majflt       => 0,
+			minflt       => 0,
+			nice         => 0,
+			nivcsw       => 0,
+			nswap        => 0,
+			nvcsw        => 0,
+			inblk        => 0,
+			oublk        => 0,
+			pri          => 0,
+			rss          => 0,
+			systime      => 0,
+			usertime     => 0,
+			vsz          => 0,
+
 		};
 
-		my $additional
-			= `ps S -o pid,etimes,%mem,cow,dsiz,majflt,minflt,nice,nivcsw,nswap,nvcsw,inblk,oublk,pri,rss,systime,usertime,vsz | grep '^ *'$pid'[\ \t]'`;
+		if ( $status =~ /^On/ ) {
+			$vm_info->{status_int} = 0;
+			my $additional
+				= `ps S -o pid,etimes,%mem,cow,dsiz,majflt,minflt,nice,nivcsw,nswap,nvcsw,inblk,oublk,pri,rss,systime,usertime,vsz | grep '^ *'$pid'[\ \t]'`;
 
-		chomp($additional);
-		(
-			$pid,                 $vm_info->{etimes}, $vm_info->{pmem},   $vm_info->{cow},
-			$vm_info->{dsiz},     $vm_info->{majflt}, $vm_info->{minflt}, $vm_info->{nice},
-			$vm_info->{nivcsw},   $vm_info->{nswap},  $vm_info->{nvcsw},  $vm_info->{inblk},
-			$vm_info->{oublk},    $vm_info->{pri},    $vm_info->{rss},    $vm_info->{systime},
-			$vm_info->{usertime}, $vm_info->{vsz}
-		) = split( /[\ \t]+/, $additional );
+			chomp($additional);
+			(
+				$pid,                 $vm_info->{etimes}, $vm_info->{pmem},   $vm_info->{cow},
+				$vm_info->{dsiz},     $vm_info->{majflt}, $vm_info->{minflt}, $vm_info->{nice},
+				$vm_info->{nivcsw},   $vm_info->{nswap},  $vm_info->{nvcsw},  $vm_info->{inblk},
+				$vm_info->{oublk},    $vm_info->{pri},    $vm_info->{rss},    $vm_info->{systime},
+				$vm_info->{usertime}, $vm_info->{vsz}
+			) = split( /[\ \t]+/, $additional );
 
-		# zero anything undefined
-		my @keys = keys( %{$vm_info} );
-		foreach my $info_key (@keys) {
-			if ( !defined( $vm_info->{$info_key} ) ) {
-				$vm_info->{$info_key} = 0;
+			# zero anything undefined
+			my @keys = keys( %{$vm_info} );
+			foreach my $info_key (@keys) {
+				if ( !defined( $vm_info->{$info_key} ) ) {
+					$vm_info->{$info_key} = 0;
+				}
+			}
+
+			# process the snapshots
+			my $snaplist_raw = `cbsd jsnapshot mode=list jname=$vm | sed -e 's/\x1b\[[0-9;]*m//g'`;
+			my @snaplist     = split( /\n/, $snaplist_raw );
+
+			# line 0 is always the header
+			my $snaplist_int = 1;
+			while ( defined( $snaplist[$snaplist_int] ) ) {
+				chomp( $snaplist[$snaplist_int] );
+
+				my ( $jname, $snapname, $snap_creation, $refer ) = split( /[\ \t]+/, $snaplist[$snaplist_int] );
+
+				if ( $refer =~ /[Kk]$/ ) {
+					$refer = $refer * 1000;
+				}
+				elsif ( $refer =~ /[Mm]$/ ) {
+					$refer = $refer * 1000000;
+				}
+				elsif ( $refer =~ /[Gg]$/ ) {
+					$refer = $refer * 1000000000;
+				}
+				elsif ( $refer =~ /[Tt]$/ ) {
+					$refer = $refer * 1000000000000;
+				}
+
+				$vm_info->{snaps_size} = $vm_info->{snaps_size} + $refer;
+
+				$snaplist_int++;
+			}
+
+			$vm_info->{snaps} = $#snaplist;
+
+			my ( $minutes, $seconds ) = split( /\:/, $vm_info->{systime} );
+			$vm_info->{systime} = ( $minutes * 60 ) + $seconds;
+
+			( $minutes, $seconds ) = split( /\:/, $vm_info->{usertime} );
+			$vm_info->{usertime} = ( $minutes * 60 ) + $seconds;
+
+			foreach my $interface (@ifs) {
+				my $if_raw = `ifconfig $interface | grep -E 'description: ' | cut -d: -f 2- | head -n 1`;
+				chomp($if_raw);
+				$if_raw =~ s/^[\'\"\ ]+//;
+				$if_raw =~ s/[\'\"]$//;
+				if ( $if_raw =~ /^$vm-nic[0-9]/ ) {
+					push( @{ $vm_info->{ifs} }, $interface );
+				}
+			}
+
+			foreach my $to_total (@total) {
+				$return_hash->{totals}{$to_total} = $return_hash->{totals}{$to_total} + $vm_info->{$to_total};
 			}
 		}
-
-		# process the snapshots
-		my $snaplist_raw = `cbsd jsnapshot mode=list jname=$vm | sed -e 's/\x1b\[[0-9;]*m//g'`;
-		my @snaplist     = split( /\n/, $snaplist_raw );
-
-		# line 0 is always the header
-		my $snaplist_int = 1;
-		while ( defined( $snaplist[$snaplist_int] ) ) {
-			chomp( $snaplist[$snaplist_int] );
-
-			my ( $jname, $snapname, $snap_creation, $refer ) = split( /[\ \t]+/, $snaplist[$snaplist_int] );
-
-			if ( $refer =~ /[Kk]$/ ) {
-				$refer = $refer * 1000;
-			}
-			elsif ( $refer =~ /[Mm]$/ ) {
-				$refer = $refer * 1000000;
-			}
-			elsif ( $refer =~ /[Gg]$/ ) {
-				$refer = $refer * 1000000000;
-			}
-			elsif ( $refer =~ /[Tt]$/ ) {
-				$refer = $refer * 1000000000000;
-			}
-
-			$vm_info->{snaps_size} = $vm_info->{snaps_size} + $refer;
-
-			$snaplist_int++;
-		}
-
-		$vm_info->{snaps} = $#snaplist;
-
-		my ( $minutes, $seconds ) = split( /\:/, $vm_info->{systime} );
-		$vm_info->{systime} = ( $minutes * 60 ) + $seconds;
-
-		( $minutes, $seconds ) = split( /\:/, $vm_info->{usertime} );
-		$vm_info->{usertime} = ( $minutes * 60 ) + $seconds;
-
-		foreach my $interface (@ifs) {
-			my $if_raw = `ifconfig $interface | grep -E 'description: ' | cut -d: -f 2- | head -n 1`;
-			chomp($if_raw);
-			$if_raw =~ s/^[\'\"\ ]+//;
-			$if_raw =~ s/[\'\"]$//;
-			if ( $if_raw =~ /^$vm-nic[0-9]/ ) {
-				push( @{ $vm_info->{ifs} }, $interface );
-			}
-		}
-
-		foreach my $to_total (@total) {
-			$return_hash->{totals}{$to_total} = $return_hash->{totals}{$to_total} + $vm_info->{$to_total};
+		elsif ( $status =~ /^[Oo][Ff][Ff]/ ) {
+			$vm_info->{status_int} = 1;
 		}
 
 		$return_hash->{VMs}{$vm} = $vm_info;
