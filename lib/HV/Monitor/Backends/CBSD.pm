@@ -1,4 +1,4 @@
-ypackage HV::Monitor::Backends::CBSD;
+package HV::Monitor::Backends::CBSD;
 
 use 5.006;
 use strict;
@@ -212,7 +212,7 @@ sub run {
 	}
 
 	return {
-		version => $self->{version},
+		version     => $self->{version},
 		error       => 0,
 		errorString => '',
 		data        => $return_hash,
