@@ -3,50 +3,126 @@ package HV::Monitor;
 use 5.006;
 use strict;
 use warnings;
+use Module::List qw(list_modules);
 
 =head1 NAME
 
-HV::Monitor - The great new HV::Monitor!
+HV::Monitor - A generalized module for gathering stats for a hypervisor.
 
 =head1 VERSION
 
-Version 0.01
+Version 0.0.1
 
 =cut
 
-our $VERSION = '0.01';
-
+our $VERSION = '0.0.1';
 
 =head1 SYNOPSIS
 
-Quick summary of what the module does.
-
-Perhaps a little code snippet.
-
     use HV::Monitor;
 
-    my $foo = HV::Monitor->new();
-    ...
+=head1 METHODS
 
-=head1 EXPORT
+=head2 new
 
-A list of functions that can be exported.  You can delete this section
-if you don't export anything, such as for a purely object-oriented module.
+Inits the object.
 
-=head1 SUBROUTINES/METHODS
+One option is taken and that is a hash ref.
 
-=head2 function1
+    # init with the cbsd backend
+    my $hm->new({backend=>'CBSD'});
+
+The keys are list as below.
+
+    - backend :: The name of the backend to use.
+        Default :: CBSD
 
 =cut
 
-sub function1 {
+sub new {
+	my $module=shift;
+	my $config=shift;
+
+	if (!defined($config->{backend})) {
+		$config->{backend}='CBSD';
+	}
+
+	my $self = {
+				version=>1,
+	};
+	bless $self;
+
+	return $self;
 }
 
-=head2 function2
+=head2 load
+
+This loads the specified backend.
+
+    eval{ $hm->load; };
+    if ( $@ ){
+        print "Failed to load the backend... ".$@;
+    }
 
 =cut
 
-sub function2 {
+sub load {
+	my $self = $_[0];
+
+	my $loaded = 0;
+
+	my $backend_test;
+	my $usable;
+	my $test_string = '
+use ' . $self->{backend} . ';
+$backend_test=' . $self->{backend} . '->new;
+$usable=$backend_test->usable;
+';
+	eval($test_string);
+	if ($usable) {
+		$self->{backend_mod} = $backend_test;
+		$loaded = 1;
+	}else {
+		die('Failed to load backend... '.$@);
+	}
+
+	return $loaded;
+}
+
+=head2 run
+
+Runs the poller backend and report the results.
+
+If nothing is nothing is loaded, load will be called.
+
+    my $status=$hm->run;
+
+=cut
+
+sub run {
+	my $self = $_[0];
+
+	if (!defined($self->{backend_mod})) {
+		return {
+				version=>$self->{version},
+				data=>{},
+				error=>1,
+				errorString=>'No module loaded',
+				};
+	}
+
+	my $to_return;
+	eval{ $to_return=$self->{backend_mod}->run };
+	if ($@) {
+		return {
+				version=>$self->{version},
+				data=>{},
+				error=>1,
+				errorString=>'Failed to run backend... '.$@,
+				};
+	}
+
+	return $to_return;
 }
 
 =head1 AUTHOR
@@ -102,4 +178,4 @@ This is free software, licensed under:
 
 =cut
 
-1; # End of HV::Monitor
+1;    # End of HV::Monitor
