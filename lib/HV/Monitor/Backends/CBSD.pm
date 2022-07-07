@@ -233,6 +233,8 @@ sub run {
 				`cbsd bhyve-nic-list display=nic_parent,nic_hwaddr jname=$vm | sed -e 's/\x1b\[[0-9;]*m//g'` );
 			my $bnics_int = 1;
 			while ( defined( $bnics_raw[$bnics_int] ) ) {
+				my $nic = $bnics_int - 1;
+
 				chomp( $bnics_raw[$bnics_int] );
 				my @line_split = split( /[\ \t]+/, $bnics_raw[$bnics_int] );
 
@@ -252,7 +254,7 @@ sub run {
 					drop   => 0,
 				};
 
-				$vm_info->{ifs}{ 'nic' . $bnics_int } = $nic_info;
+				$vm_info->{ifs}{ $nic } = $nic_info;
 
 				$bnics_int++;
 			}
