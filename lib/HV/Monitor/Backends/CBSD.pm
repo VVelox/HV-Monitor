@@ -254,7 +254,7 @@ sub run {
 					drop   => 0,
 				};
 
-				$vm_info->{ifs}{ $nic } = $nic_info;
+				$vm_info->{ifs}{ 'nic'.$nic } = $nic_info;
 
 				$bnics_int++;
 			}
