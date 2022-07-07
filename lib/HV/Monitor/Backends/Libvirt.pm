@@ -53,18 +53,17 @@ sub new {
 sub run {
 	my $self = $_[0];
 
-	my $list_raw=`virsh list  --all --name| grep -v '^$'`;
+	my $list_raw = `virsh list  --all --name| grep -v '^$'`;
 	if ( $? != 0 ) {
 		return {
 			data        => {},
 			version     => $self->{version},
 			error       => 2,
-			errorString =>
-				'"virsh list  --all --name" exited non-zero',
+			errorString => '"virsh list  --all --name" exited non-zero',
 		};
 	}
 
-	my @VMs=split(/\n/, $list_raw);
+	my @VMs = split( /\n/, $list_raw );
 
 	my $ifs_raw = `ifconfig | grep '^[A-Za-z]' | cut -d: -f 1`;
 	my @ifs     = split( /\n/, $ifs_raw );
@@ -87,7 +86,6 @@ sub run {
 			'cow'         => 0,
 			'nivcsw'      => 0,
 			'systime'     => 0,
-			'dsiz'        => 0,
 			'vsz'         => 0,
 			'etimes'      => 0,
 			'majflt'      => 0,
@@ -109,30 +107,20 @@ sub run {
 	# values that should be totaled
 	my @total = (
 		'usertime', 'pmem',   'mem_use',    'oublk', 'minflt', 'pcpu',   'mem_alloc', 'nvcsw',
-		'snaps',    'rss',    'snaps_size', 'cpus',  'cow',    'nivcsw', 'systime',   'dsiz',
-		'vsz',      'etimes', 'majflt',     'inblk', 'nswap'
+		'snaps',    'rss',    'snaps_size', 'cpus',  'cow',    'nivcsw', 'systime',   'vsz',
+		'etimes',   'majflt', 'inblk',      'nswap'
 	);
 
 	foreach my $vm (@VMs) {
 
-		my $domstats_raw='virsh domstats $vm';
-		my $pid=`ps ax o pid,args | grep qemu | grep ' -name '| grep 'guest='$vm','`;
-		chomp($pid);
-		$pid=~s/^[\ \t]*//;
-		my $command=$pid;
-		$pid=~s/[\ \t]+.*$//;
-		$command=~s/^[0-9]+[\ \t]+//;
-
-		my $console_type='unknown';
-		my $console_options=$command;
-		if ($command=~s/[\ \t]-vnc[\t\ ]//) {
-			$console_type='vnc';
-			$console_options=~s/.*\-vnc[\t\ ]+//;
-		}elsif($command=~s/[\ \t]-spice[\t\ ]//) {
-			$console_type='spice';
-			$console_options=~s/.*\-spice[\t\ ]+//;
+		my $domstats_raw   = `virsh domstats $vm --nowait | grep -v '^Domain' | grep -v '^$' | sed 's/^[\ \t]*//'`;
+		my $domstats       = {};
+		my @domstats_split = split( /\n/, $domstats_raw );
+		foreach my $line (@domstats_split) {
+			chomp($line);
+			my ( $stat, $value ) = split( /=/, $line, 2 );
+			$domstats->{$stat} = $value;
 		}
-		$console_options=~s/[\t\ ].*$//;
 
 		# The ones below are linux only, so just zeroing here.
 		# syscw syscw rchar wchar rbytes wbytes cwbytes
@@ -142,10 +130,10 @@ sub run {
 			cpus         => 0,
 			pcpu         => 0,
 			os_type      => 0,
-			ip           => 0,
-			status       => 0,
-			console_type => $console_type,
-			console      => $console_options,
+			ip           => '',
+			status       => '',
+			console_type => '',
+			console      => '',
 			snaps_size   => 0,
 			ifs          => [],
 			syscw        => 0,
@@ -158,7 +146,6 @@ sub run {
 			etimes       => 0,
 			pmem         => 0,
 			cow          => 0,
-			dsiz         => 0,
 			majflt       => 0,
 			minflt       => 0,
 			nice         => 0,
@@ -184,6 +171,33 @@ sub run {
 		# VIR_DOMAIN_SHUTOFF 	= 	5 (0x5) 	the domain is shut off
 		# VIR_DOMAIN_CRASHED 	= 	6 (0x6) 	the domain is crashed
 		# VIR_DOMAIN_PMSUSPENDED 	= 	7 (0x7) 	the domain is suspended by guest power management
+		if (   $domstats->{'state.state'} eq 1
+			|| $domstats->{'state.state'} eq 3
+			|| $domstats->{'state.state'} eq 4 )
+		{
+			my $pid = `ps ax o pid,args | grep qemu | grep ' -name '| grep 'guest='$vm','`;
+			chomp($pid);
+			$pid =~ s/^[\ \t]*//;
+			my $command = $pid;
+			$pid     =~ s/[\ \t]+.*$//;
+			$command =~ s/^[0-9]+[\ \t]+//;
+
+			my $console_type    = 'unknown';
+			my $console_options = $command;
+			if ( $command =~ s/[\ \t]-vnc[\t\ ]// ) {
+				$console_type = 'vnc';
+				$console_options =~ s/.*\-vnc[\t\ ]+//;
+			}
+			elsif ( $command =~ s/[\ \t]-spice[\t\ ]// ) {
+				$console_type = 'spice';
+				$console_options =~ s/.*\-spice[\t\ ]+//;
+			}
+			$console_options =~ s/[\t\ ].*$//;
+			$vm_info->{console_type}=$console_type;
+			$vm_info->{console}=$console_options;
+
+
+		}
 
 		$return_hash->{VMs}{$vm} = $vm_info;
 		push( @VMs, $vm );

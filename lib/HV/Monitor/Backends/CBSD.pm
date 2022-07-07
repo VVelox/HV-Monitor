@@ -91,7 +91,6 @@ sub run {
 			'cow'         => 0,
 			'nivcsw'      => 0,
 			'systime'     => 0,
-			'dsiz'        => 0,
 			'vsz'         => 0,
 			'etimes'      => 0,
 			'majflt'      => 0,
@@ -113,8 +112,8 @@ sub run {
 	# values that should be totaled
 	my @total = (
 		'usertime', 'pmem',   'mem_use',    'oublk', 'minflt', 'pcpu',   'mem_alloc', 'nvcsw',
-		'snaps',    'rss',    'snaps_size', 'cpus',  'cow',    'nivcsw', 'systime',   'dsiz',
-		'vsz',      'etimes', 'majflt',     'inblk', 'nswap'
+		'snaps',    'rss',    'snaps_size', 'cpus',  'cow',    'nivcsw', 'systime',   'vsz',
+		'etimes',   'majflt', 'inblk',      'nswap'
 	);
 
 	my @bls_split = split( /\n/, $bls_raw );
@@ -136,7 +135,7 @@ sub run {
 			console_type => 'vnc',
 			console      => $vnc,
 			snaps_size   => 0,
-			ifs          => [],
+			ifs          => {},
 			syscw        => 0,
 			syscw        => 0,
 			rchar        => 0,
@@ -147,7 +146,6 @@ sub run {
 			etimes       => 0,
 			pmem         => 0,
 			cow          => 0,
-			dsiz         => 0,
 			majflt       => 0,
 			minflt       => 0,
 			nice         => 0,
@@ -161,22 +159,21 @@ sub run {
 			systime      => 0,
 			usertime     => 0,
 			vsz          => 0,
-
 		};
 
 		if ( $status =~ /^On/ ) {
 			$vm_info->{status_int} = 0;
 			$return_hash->{totals}{on}++;
 			my $additional
-				= `ps S -o pid,etimes,%mem,cow,dsiz,majflt,minflt,nice,nivcsw,nswap,nvcsw,inblk,oublk,pri,rss,systime,usertime,vsz | grep '^ *'$pid'[\ \t]'`;
+				= `ps S -o pid,etimes,%mem,cow,majflt,minflt,nice,nivcsw,nswap,nvcsw,inblk,oublk,pri,rss,systime,usertime,vsz | grep '^ *'$pid'[\ \t]'`;
 
 			chomp($additional);
 			(
-				$pid,                 $vm_info->{etimes}, $vm_info->{pmem},   $vm_info->{cow},
-				$vm_info->{dsiz},     $vm_info->{majflt}, $vm_info->{minflt}, $vm_info->{nice},
-				$vm_info->{nivcsw},   $vm_info->{nswap},  $vm_info->{nvcsw},  $vm_info->{inblk},
-				$vm_info->{oublk},    $vm_info->{pri},    $vm_info->{rss},    $vm_info->{systime},
-				$vm_info->{usertime}, $vm_info->{vsz}
+				$pid,               $vm_info->{etimes}, $vm_info->{pmem},    $vm_info->{cow},
+				$vm_info->{majflt}, $vm_info->{minflt}, $vm_info->{nice},    $vm_info->{nivcsw},
+				$vm_info->{nswap},  $vm_info->{nvcsw},  $vm_info->{inblk},   $vm_info->{oublk},
+				$vm_info->{pri},    $vm_info->{rss},    $vm_info->{systime}, $vm_info->{usertime},
+				$vm_info->{vsz}
 			) = split( /[\ \t]+/, $additional );
 
 			# zero anything undefined
@@ -228,13 +225,75 @@ sub run {
 			( $minutes, $seconds ) = split( /\:/, $vm_info->{usertime} );
 			$vm_info->{usertime} = ( $minutes * 60 ) + $seconds;
 
+			#
+			# NIC info
+			#
+
+			my @bnics_raw = split( /\n/,
+				`cbsd bhyve-nic-list display=nic_parent,nic_hwaddr jname=$vm | sed -e 's/\x1b\[[0-9;]*m//g'` );
+			my $bnics_int = 1;
+			if ( defined( $bnics_raw[$bnics_int] ) ) {
+				chomp( $bnics_raw[$bnics_int] );
+				my @line_split = split( /[\ \t]+/, $bnics_raw[$bnics_int] );
+
+				my $nic_info = {
+					mac    => $line_split[1],
+					parent => $line_split[0],
+					if     => '',
+					ipkgs  => 0,
+					ierrs  => 0,
+					ibytes => 0,
+					idrop  => 0,
+					opkts  => 0,
+					oerrs  => 0,
+					obytes => 0,
+					coll   => 0,
+					odrop  => 0,
+					drop   => 0,
+				};
+
+				$vm_info->{ifs}{ 'nic' . $bnics_int } = $nic_info;
+
+				$bnics_int++;
+			}
+
+			# get a list of NICs the VM uses
+			my $VM_ifs = {};
 			foreach my $interface (@ifs) {
 				my $if_raw = `ifconfig $interface | grep -E 'description: ' | cut -d: -f 2- | head -n 1`;
 				chomp($if_raw);
 				$if_raw =~ s/^[\'\"\ ]+//;
 				$if_raw =~ s/[\'\"]$//;
-				if ( $if_raw =~ /^$vm-nic[0-9]/ ) {
-					push( @{ $vm_info->{ifs} }, $interface );
+				if ( $if_raw =~ /^$vm-nic[0-9]+/ ) {
+					my $nic = $if_raw;
+					$nic =~ s/^$vm\-//;
+
+					$vm_info->{ifs}{$nic}{if} = $interface;
+
+					my @netstats     = split( /\n/, `netstat -ibdWn -I $interface` );
+					my $netstats_int = 1;
+					my @add_stats    = ( 'ipkgs', 'ierrs', 'idrop', 'ibytes', 'opkts', 'oerrs', 'coll', 'drop' );
+					while ( defined( $netstats[$netstats_int] ) ) {
+						my $line = $netstats[$netstats_int];
+						chomp($line);
+
+						my $if_stats = {};
+
+						(
+							$if_stats->{int},   $if_stats->{mtu},   $if_stats->{network}, $if_stats->{address},
+							$if_stats->{ipkgs}, $if_stats->{ierrs}, $if_stats->{idrop},   $if_stats->{ibytes},
+							$if_stats->{opkts}, $if_stats->{oerrs}, $if_stats->{obytes},  $if_stats->{coll},
+							$if_stats->{drop}
+						) = split( /[\ \t]+/, $line );
+
+						foreach my $current_stat (@add_stats) {
+							if ( $if_stats->{$current_stat} =~ /^[0-9]+$/ ) {
+								$vm_info->{ifs}{$nic}{$current_stat} += $if_stats->{$current_stat};
+							}
+						}
+
+						$netstats_int++;
+					}
 				}
 			}
 
