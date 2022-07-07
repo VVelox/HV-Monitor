@@ -232,7 +232,7 @@ sub run {
 			my @bnics_raw = split( /\n/,
 				`cbsd bhyve-nic-list display=nic_parent,nic_hwaddr jname=$vm | sed -e 's/\x1b\[[0-9;]*m//g'` );
 			my $bnics_int = 1;
-			if ( defined( $bnics_raw[$bnics_int] ) ) {
+			while ( defined( $bnics_raw[$bnics_int] ) ) {
 				chomp( $bnics_raw[$bnics_int] );
 				my @line_split = split( /[\ \t]+/, $bnics_raw[$bnics_int] );
 
