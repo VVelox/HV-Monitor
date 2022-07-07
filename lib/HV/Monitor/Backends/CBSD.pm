@@ -259,6 +259,8 @@ sub run {
 
 			# get a list of NICs the VM uses
 			my $VM_ifs = {};
+
+			# go through each
 			foreach my $interface (@ifs) {
 				my $if_raw = `ifconfig $interface | grep -E 'description: ' | cut -d: -f 2- | head -n 1`;
 				chomp($if_raw);
