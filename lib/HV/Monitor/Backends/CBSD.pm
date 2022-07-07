@@ -257,10 +257,8 @@ sub run {
 				$bnics_int++;
 			}
 
-			# get a list of NICs the VM uses
-			my $VM_ifs = {};
-
 			# go through each
+			my @add_stats = ( 'ipkgs', 'ierrs', 'idrop', 'ibytes', 'opkts', 'oerrs', 'coll', 'drop' );
 			foreach my $interface (@ifs) {
 				my $if_raw = `ifconfig $interface | grep -E 'description: ' | cut -d: -f 2- | head -n 1`;
 				chomp($if_raw);
@@ -274,7 +272,6 @@ sub run {
 
 					my @netstats     = split( /\n/, `netstat -ibdWn -I $interface` );
 					my $netstats_int = 1;
-					my @add_stats    = ( 'ipkgs', 'ierrs', 'idrop', 'ibytes', 'opkts', 'oerrs', 'coll', 'drop' );
 					while ( defined( $netstats[$netstats_int] ) ) {
 						my $line = $netstats[$netstats_int];
 						chomp($line);
