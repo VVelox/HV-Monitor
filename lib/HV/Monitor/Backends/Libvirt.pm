@@ -159,7 +159,7 @@ sub run {
 			console_type => '',
 			console      => '',
 			snaps_size   => 0,
-			ifs          => [],
+			ifs          => {},
 			syscw        => 0,
 			syscw        => 0,
 			rchar        => 0,
@@ -261,11 +261,12 @@ sub run {
 				}
 			}
 
+			$vm_info->{ifs}{'nic'.$nic_int}=$nic_info;
+
 			$nic_int++;
 		}
 
 		$return_hash->{VMs}{$vm} = $vm_info;
-		push( @VMs, $vm );
 	}
 
 	return {
