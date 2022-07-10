@@ -136,9 +136,9 @@ sub run {
 
 	foreach my $vm (@VMs) {
 
-		my $domstats_raw   = `virsh domstats $vm --nowait | grep -v '^Domain' | grep -v '^$' | sed 's/^[\ \t]*//'`;
+		my $domstats_raw   = `virsh domstats $vm --nowait | grep -v '^Domain' | sed 's/^[\ \t]*//'`;
 		my $domstats       = {};
-		my @domstats_split = split( /\n/, $domstats_raw );
+		my @domstats_split = grep(!/^[\ \t]*$/, split( /\n/, $domstats_raw ));
 		foreach my $line (@domstats_split) {
 			chomp($line);
 			my ( $stat, $value ) = split( /=/, $line, 2 );
