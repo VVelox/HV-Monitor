@@ -86,7 +86,7 @@ sub run {
 		$net_cache->{$net_name} = $bridge_dev;
 	}
 
-	my @VMs = grep(!/^[\ \t]*$/, split( /\n/, $list_raw ));
+	my @VMs = grep( !/^[\ \t]*$/, split( /\n/, $list_raw ) );
 
 	my $ifs_raw = `ifconfig | grep '^[A-Za-z]' | cut -d: -f 1`;
 	my @ifs     = split( /\n/, $ifs_raw );
@@ -138,10 +138,10 @@ sub run {
 
 		my $domstats_raw   = `virsh domstats $vm --nowait`;
 		my $domstats       = {};
-		my @domstats_split = grep(!/^Domain/, grep(!/^[\ \t]*$/, split( /\n/, $domstats_raw )));
+		my @domstats_split = grep( !/^Domain/, grep( !/^[\ \t]*$/, split( /\n/, $domstats_raw ) ) );
 		foreach my $line (@domstats_split) {
 			chomp($line);
-			$line=~s/^[\ \t]+//;
+			$line =~ s/^[\ \t]+//;
 			my ( $stat, $value ) = split( /=/, $line, 2 );
 			$domstats->{$stat} = $value;
 		}
@@ -155,7 +155,7 @@ sub run {
 			pcpu         => 0,
 			os_type      => 0,
 			ip           => '',
-			status_int       => $domstats->{'state.state'},
+			status_int   => $domstats->{'state.state'},
 			console_type => '',
 			console      => '',
 			snaps_size   => 0,
@@ -260,31 +260,38 @@ sub run {
 				}
 			}
 
-			$vm_info->{ifs}{'nic'.$nic_int}=$nic_info;
-
-			if ($vm_info->{status_int} == 0) {
-				$return_hash->{totals}{nostate}++;
-			} elsif($vm_info->{status_int} == 1) {
-				$return_hash->{totals}{on}++;
-			}elsif($vm_info->{status_int} == 2) {
-				$return_hash->{totals}{blocked}++;
-			}elsif($vm_info->{status_int} == 3) {
-				$return_hash->{totals}{paused}++;
-			}elsif($vm_info->{status_int} == 4) {
-				$return_hash->{totals}{off_soft}++;
-			}elsif($vm_info->{status_int} == 5) {
-				$return_hash->{totals}{off_hard}++;
-			}elsif($vm_info->{status_int} == 6) {
-				$return_hash->{totals}{crashed}++;
-			}elsif($vm_info->{status_int} == 7) {
-				$return_hash->{totals}{pmsuspended}++;
-			}
+			$vm_info->{ifs}{ 'nic' . $nic_int } = $nic_info;
 
 			$nic_int++;
 		}
 
+		if ( $vm_info->{status_int} == 0 ) {
+			$return_hash->{totals}{nostate}++;
+		}
+		elsif ( $vm_info->{status_int} == 1 ) {
+			$return_hash->{totals}{on}++;
+		}
+		elsif ( $vm_info->{status_int} == 2 ) {
+			$return_hash->{totals}{blocked}++;
+		}
+		elsif ( $vm_info->{status_int} == 3 ) {
+			$return_hash->{totals}{paused}++;
+		}
+		elsif ( $vm_info->{status_int} == 4 ) {
+			$return_hash->{totals}{off_soft}++;
+		}
+		elsif ( $vm_info->{status_int} == 5 ) {
+			$return_hash->{totals}{off_hard}++;
+		}
+		elsif ( $vm_info->{status_int} == 6 ) {
+			$return_hash->{totals}{crashed}++;
+		}
+		elsif ( $vm_info->{status_int} == 7 ) {
+			$return_hash->{totals}{pmsuspended}++;
+		}
+
 		foreach my $to_total (@total) {
-			if (defined( $vm_info->{$to_total} )) {
+			if ( defined( $vm_info->{$to_total} ) ) {
 				$return_hash->{totals}{$to_total} = $return_hash->{totals}{$to_total} + $vm_info->{$to_total};
 			}
 		}
