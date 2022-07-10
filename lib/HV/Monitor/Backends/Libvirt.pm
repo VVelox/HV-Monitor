@@ -155,7 +155,7 @@ sub run {
 			pcpu         => 0,
 			os_type      => 0,
 			ip           => '',
-			status       => '',
+			status_int       => $domstats->{'state.state'},
 			console_type => '',
 			console      => '',
 			snaps_size   => 0,
@@ -264,6 +264,10 @@ sub run {
 			$vm_info->{ifs}{'nic'.$nic_int}=$nic_info;
 
 			$nic_int++;
+		}
+
+		foreach my $to_total (@total) {
+			$return_hash->{totals}{$to_total} = $return_hash->{totals}{$to_total} + $vm_info->{$to_total};
 		}
 
 		$return_hash->{VMs}{$vm} = $vm_info;
