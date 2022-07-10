@@ -12,7 +12,7 @@ These are all relevant to `.data` in the JSON.
 
 - mem_alloc :: Allocated RAM, MB
 - mem_use :: Ram in use, MB.
-- cpus :: CPU the VM has.
+- cpus :: Virtual CPU count for the VM.
 - pcpu :: CPU usage percentage.
 - pmem :: Memory usage percentage.
 - os_type :: OS the HV regards as the VM as using.
@@ -44,17 +44,24 @@ These are all relevant to `.data` in the JSON.
 - rss :: In memory size in Kbytes.
 - systime :: Accumulated system CPU time.
 - usertime :: Accumulated user CPU time.
-- vsz :: Virtual size in Kbytes.
+- vsz :: Virtual memory size in Kbytes.
 
-- if
-- coll
-- drop
-- ibytes
-- idrop
-- ierrs
-- ipkgs
-- oerrs
-- opkts
+The interface hash stats are as below.
+
+- if :: Interface the device is mapped to.
+- parent :: Bridge or the like the device if is sitting on.
+- coll :: Packet collisions.
+- ibytes :: Input bytes.
+- idrop :: Input packet drops.
+- ierrs :: Input errors.
+- ipkgs :: Input packets.
+- obytes :: Output bytes.
+- odrop :: Output packet drops.
+- oerrs :: Output errors.
+- opkts :: Output packets.
+
+The state integer mapping is as below and based off of Libvirtd. Not
+all HV will support all of them.
 
 | State       | Int | Desc                                |
 |-------------|-----|-------------------------------------|

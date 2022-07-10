@@ -240,7 +240,7 @@ sub run {
 					mac    => $line_split[1],
 					parent => $line_split[0],
 					if     => '',
-					ipkgs  => 0,
+					ipkts  => 0,
 					ierrs  => 0,
 					ibytes => 0,
 					idrop  => 0,
@@ -249,7 +249,6 @@ sub run {
 					obytes => 0,
 					coll   => 0,
 					odrop  => 0,
-					drop   => 0,
 				};
 
 				$vm_info->{ifs}{ 'nic'.$nic } = $nic_info;
@@ -258,7 +257,7 @@ sub run {
 			}
 
 			# go through each
-			my @add_stats = ( 'ipkgs', 'ierrs', 'idrop', 'ibytes', 'opkts', 'oerrs', 'coll', 'drop' );
+			my @add_stats = ( 'ipkts', 'ierrs', 'idrop', 'ibytes', 'opkts', 'oerrs', 'coll', 'odrop' );
 			foreach my $interface (@ifs) {
 				my $if_raw = `ifconfig $interface | grep -E 'description: ' | cut -d: -f 2- | head -n 1`;
 				chomp($if_raw);
@@ -280,9 +279,9 @@ sub run {
 
 						(
 							$if_stats->{int},   $if_stats->{mtu},   $if_stats->{network}, $if_stats->{address},
-							$if_stats->{ipkgs}, $if_stats->{ierrs}, $if_stats->{idrop},   $if_stats->{ibytes},
+							$if_stats->{ipkts}, $if_stats->{ierrs}, $if_stats->{idrop},   $if_stats->{ibytes},
 							$if_stats->{opkts}, $if_stats->{oerrs}, $if_stats->{obytes},  $if_stats->{coll},
-							$if_stats->{drop}
+							$if_stats->{odrop}
 						) = split( /[\ \t]+/, $line );
 
 						foreach my $current_stat (@add_stats) {

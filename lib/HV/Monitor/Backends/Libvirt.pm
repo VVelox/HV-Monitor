@@ -3,6 +3,7 @@ package HV::Monitor::Backends::Libvirt;
 use 5.006;
 use strict;
 use warnings;
+use JSON;
 
 =head1 NAME
 
@@ -61,6 +62,28 @@ sub run {
 			error       => 2,
 			errorString => '"virsh list  --all --name" exited non-zero',
 		};
+	}
+
+	#
+	# build a indexed mapping of netdev to bridge mappings
+	#
+	my @net_list;
+	foreach my $net_name (
+		grep( !/[\ \t]*Name[\ \t]+State[\ \t]+Autostart[\ \t]+Persistent$/,
+			grep( !/^-+$/, split( /\n/, `virsh net-list --all` ) ) )
+		)
+	{
+		$net_name =~ s/^[\ \t]*//;
+		$net_name =~ s/[\ \t]+.*$//;
+		push( @net_list, $net_name );
+	}
+	my $net_cache = {};
+	foreach my $net_name (@net_list) {
+		my ($bridge_dev) = grep( /^Bridge\:/, `virsh net-info $net_name` );
+		$bridge_dev =~ s/^Bridge\:[\ \t]+//;
+		chomp($bridge_dev);
+		$bridge_dev =~ s/[\ \t].*$//;
+		$net_cache->{$net_name} = $bridge_dev;
 	}
 
 	my @VMs = split( /\n/, $list_raw );
@@ -171,6 +194,7 @@ sub run {
 		# VIR_DOMAIN_SHUTOFF 	= 	5 (0x5) 	the domain is shut off
 		# VIR_DOMAIN_CRASHED 	= 	6 (0x6) 	the domain is crashed
 		# VIR_DOMAIN_PMSUSPENDED 	= 	7 (0x7) 	the domain is suspended by guest power management
+		my @hv_args;
 		if (   $domstats->{'state.state'} eq 1
 			|| $domstats->{'state.state'} eq 3
 			|| $domstats->{'state.state'} eq 4 )
@@ -193,10 +217,50 @@ sub run {
 				$console_options =~ s/.*\-spice[\t\ ]+//;
 			}
 			$console_options =~ s/[\t\ ].*$//;
-			$vm_info->{console_type}=$console_type;
-			$vm_info->{console}=$console_options;
+			$vm_info->{console_type} = $console_type;
+			$vm_info->{console}      = $console_options;
 
+			@hv_args = split( /\n/, `cat /proc/$pid/cmdline | strings` );
+		}
 
+		#
+		# process interfaces
+		#
+		my $nic_int = 0;
+		while ( defined( defined( $domstats->{ 'net.' . $nic_int . '.name' } ) ) ) {
+			my $nic_info = {
+				mac    => '',
+				parent => '',
+				if     => $domstats->{ 'net.' . $nic_int . '.name' },
+				ipkts  => $domstats->{ 'net.' . $nic_int . '.rx.pkts' },
+				ierrs  => $domstats->{ 'net.' . $nic_int . '.rx.errs' },
+				ibytes => $domstats->{ 'net.' . $nic_int . '.rx.bytes' },
+				idrop  => $domstats->{ 'net.' . $nic_int . '.rx.drop' },
+				opkts  => $domstats->{ 'net.' . $nic_int . '.tx.pkts' },
+				oerrs  => $domstats->{ 'net.' . $nic_int . '.tx.errs' },
+				obytes => $domstats->{ 'net.' . $nic_int . '.tx.bytes' },
+				odrop  => $domstats->{ 'net.' . $nic_int . '.tx.drop' },
+				coll   => 0,
+			};
+
+			# get the mac and parent
+			my $netdev = 'net' . $nic_int;
+			my @net_line
+				= grep( /\"mac\"/, grep( /\"netdev\"/, grep( /^[\ \t]*{.*\"$netdev\".*\}[\ \t]*$/, @hv_args ) ) );
+			if ( defined( $net_line[0] ) ) {
+				eval {
+					my $json = decode_json( $net_line[0] );
+					$nic_info->{mac} = $json->{mac};
+					$json->{netdev} =~ s/^[a-zA-Z]+//;
+					if ( defined( $net_list[ $json->{netdev} ] ) ) {
+						if ( defined( $net_cache->{ $net_list[ $json->{netdev} ] } ) ) {
+							$nic_info->{parent} = $net_cache->{ $net_list[ $json->{netdev} ] };
+						}
+					}
+				}
+			}
+
+			$nic_int++;
 		}
 
 		$return_hash->{VMs}{$vm} = $vm_info;
