@@ -78,7 +78,6 @@ sub run {
 		totals => {
 			'usertime'    => 0,
 			'pmem'        => 0,
-			'mem_use'     => 0,
 			'oublk'       => 0,
 			'minflt'      => 0,
 			'pcpu'        => 0,
@@ -111,7 +110,7 @@ sub run {
 
 	# values that should be totaled
 	my @total = (
-		'usertime', 'pmem',   'mem_use',    'oublk', 'minflt', 'pcpu',   'mem_alloc', 'nvcsw',
+		'usertime', 'pmem',    'oublk', 'minflt', 'pcpu',   'mem_alloc', 'nvcsw',
 		'snaps',    'rss',    'snaps_size', 'cpus',  'cow',    'nivcsw', 'systime',   'vsz',
 		'etimes',   'majflt', 'inblk',      'nswap'
 	);
@@ -126,7 +125,6 @@ sub run {
 		# syscw syscw rchar wchar rbytes wbytes cwbytes
 		my $vm_info = {
 			mem_alloc    => $mem_alloc,
-			mem_use      => $mem_use,
 			cpus         => $cpus,
 			pcpu         => $pcpu,
 			os_type      => $vm_os_type,

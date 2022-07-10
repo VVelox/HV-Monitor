@@ -11,7 +11,6 @@ These are all relevant to `.data` in the JSON.
 ### VM Info Hash
 
 - mem_alloc :: Allocated RAM, MB
-- mem_use :: Ram in use, MB.
 - cpus :: Virtual CPU count for the VM.
 - pcpu :: CPU usage percentage.
 - pmem :: Memory usage percentage.
