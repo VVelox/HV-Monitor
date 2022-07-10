@@ -228,7 +228,7 @@ sub run {
 		# process interfaces
 		#
 		my $nic_int = 0;
-		while ( defined( defined( $domstats->{ 'net.' . $nic_int . '.name' } ) ) ) {
+		while ( defined( $domstats->{ 'net.' . $nic_int . '.name' } ) ) {
 			my $nic_info = {
 				mac    => '',
 				parent => '',
