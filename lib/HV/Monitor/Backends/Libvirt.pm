@@ -206,6 +206,15 @@ sub run {
 			$pid     =~ s/[\ \t]+.*$//;
 			$command =~ s/^[0-9]+[\ \t]+//;
 
+			@hv_args = split( /\n/, `cat /proc/$pid/cmdline | strings` );
+
+			my $ps_info=`ps -q $pid --no-headers -o pcpu,pmem,etimes,vsz,pri,nice`;
+			chomp($ps_info);
+			$ps_info=~s/^[\ \t]*//;
+			$ps_info=~s/[\ \t]*$//;
+			( $vm_info->{pcpu}, $vm_info->{pmem}, $vm_info->{etimes}, $vm_info->{vsz}, $vm_info->{nice} )
+				= split(/[\ \t]+/, $ps_info);
+
 			my $console_type    = 'unknown';
 			my $console_options = $command;
 			if ( $command =~ s/[\ \t]-vnc[\t\ ]// ) {
@@ -219,8 +228,6 @@ sub run {
 			$console_options =~ s/[\t\ ].*$//;
 			$vm_info->{console_type} = $console_type;
 			$vm_info->{console}      = $console_options;
-
-			@hv_args = split( /\n/, `cat /proc/$pid/cmdline | strings` );
 		}
 
 		#
@@ -265,6 +272,26 @@ sub run {
 			$nic_int++;
 		}
 
+		#
+		# process interfaces
+		#
+		my $block_int = 0;
+		while ( defined( $domstats->{ 'block.' . $block_int . '.name' } ) ) {
+			if ( defined( $domstats->{ 'block.' . $block_int . '.rd.bytes' } ) ) {
+				$vm_info->{rbytes} += $domstats->{ 'block.' . $block_int . '.rd.bytes' };
+			}
+
+			if ( defined( $domstats->{ 'block.' . $block_int . '.wr.bytes' } ) ) {
+				$vm_info->{wbytes} += $domstats->{ 'block.' . $block_int . '.wr.bytes' };
+			}
+
+			$block_int++;
+		}
+
+		#
+		# total the status totals
+		#
+
 		if ( $vm_info->{status_int} == 0 ) {
 			$return_hash->{totals}{nostate}++;
 		}
@@ -290,12 +317,17 @@ sub run {
 			$return_hash->{totals}{pmsuspended}++;
 		}
 
+		#
+		# compute other totals
+		#
+
 		foreach my $to_total (@total) {
 			if ( defined( $vm_info->{$to_total} ) ) {
 				$return_hash->{totals}{$to_total} = $return_hash->{totals}{$to_total} + $vm_info->{$to_total};
 			}
 		}
 
+		# save it and go on
 		$return_hash->{VMs}{$vm} = $vm_info;
 	}
 

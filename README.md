@@ -27,8 +27,8 @@ These are all relevant to `.data` in the JSON.
 - syscw
 - rchar
 - wchar
-- rbytes
-- wbytes
+- rbytes :: Total write bytes.
+- wbytes :: Total read bytes.
 - cwbytes
 - etimes :: Elapsed running time, in decimal integer seconds.
 - cow :: Number of copy-on-write faults.
