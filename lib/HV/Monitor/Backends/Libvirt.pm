@@ -54,7 +54,7 @@ sub new {
 sub run {
 	my $self = $_[0];
 
-	my $list_raw = `virsh list  --all --name| grep -v '^$'`;
+	my $list_raw = `virsh list  --all --name`;
 	if ( $? != 0 ) {
 		return {
 			data        => {},
@@ -86,7 +86,7 @@ sub run {
 		$net_cache->{$net_name} = $bridge_dev;
 	}
 
-	my @VMs = split( /\n/, $list_raw );
+	my @VMs = grep(!/^[\ \t]*$/, split( /\n/, $list_raw ));
 
 	my $ifs_raw = `ifconfig | grep '^[A-Za-z]' | cut -d: -f 1`;
 	my @ifs     = split( /\n/, $ifs_raw );
