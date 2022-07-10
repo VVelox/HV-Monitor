@@ -60,8 +60,8 @@ The interface hash stats are as below.
 - oerrs :: Output errors.
 - opkts :: Output packets.
 
-The state integer mapping is as below and based off of Libvirtd. Not
-all HV will support all of them.
+Status integer mapping is as below. Not all HVs will support all of
+these.
 
 | State       | Int | Desc                                |
 |-------------|-----|-------------------------------------|
@@ -73,3 +73,6 @@ all HV will support all of them.
 | SHUTOFF     | 5   | is shut off                         |
 | CRASHED     | 6   | is crashed                          |
 | PMSUSPENDED | 7   | suspended by guest power management |
+| OFF         | 8   | Generic off                         |
+| UNKNOWN     | 9   | Unknown                             |
+

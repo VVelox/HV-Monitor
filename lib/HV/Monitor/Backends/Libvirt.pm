@@ -149,9 +149,9 @@ sub run {
 		# The ones below are linux only, so just zeroing here.
 		# syscw syscw rchar wchar rbytes wbytes cwbytes
 		my $vm_info = {
-			mem_alloc    => 0,
-			mem_use      => 0,
-			cpus         => 0,
+			mem_alloc    => $domstats->{'balloon.maximum'},
+			mem_use      => $domstats->{'balloon.rss'},
+			cpus         => $domstats->{'vcpu.maximum'},
 			pcpu         => 0,
 			os_type      => 0,
 			ip           => '',
@@ -183,7 +183,6 @@ sub run {
 			systime      => 0,
 			usertime     => 0,
 			vsz          => 0,
-
 		};
 
 		# https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainState
@@ -263,11 +262,31 @@ sub run {
 
 			$vm_info->{ifs}{'nic'.$nic_int}=$nic_info;
 
+			if ($vm_info->{status_int} == 0) {
+				$return_hash->{totals}{nostate}++;
+			} elsif($vm_info->{status_int} == 1) {
+				$return_hash->{totals}{on}++;
+			}elsif($vm_info->{status_int} == 2) {
+				$return_hash->{totals}{blocked}++;
+			}elsif($vm_info->{status_int} == 3) {
+				$return_hash->{totals}{paused}++;
+			}elsif($vm_info->{status_int} == 4) {
+				$return_hash->{totals}{off_soft}++;
+			}elsif($vm_info->{status_int} == 5) {
+				$return_hash->{totals}{off_hard}++;
+			}elsif($vm_info->{status_int} == 6) {
+				$return_hash->{totals}{crashed}++;
+			}elsif($vm_info->{status_int} == 7) {
+				$return_hash->{totals}{pmsuspended}++;
+			}
+
 			$nic_int++;
 		}
 
 		foreach my $to_total (@total) {
-			$return_hash->{totals}{$to_total} = $return_hash->{totals}{$to_total} + $vm_info->{$to_total};
+			if (defined( $vm_info->{$to_total} )) {
+				$return_hash->{totals}{$to_total} = $return_hash->{totals}{$to_total} + $vm_info->{$to_total};
+			}
 		}
 
 		$return_hash->{VMs}{$vm} = $vm_info;
