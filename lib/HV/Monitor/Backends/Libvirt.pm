@@ -229,10 +229,10 @@ sub run {
 			eval{
 				my $proc_stat_raw=read_file('/proc/'.$pid.'/stat');
 				my @proc_stat=split(/[\ \t]+/,$proc_stat_raw);
-				$vm_info->{majflt}=$proc_stat[12];
-				$vm_info->{minflt}=$proc_stat[10];
-				$vm_info->{usertime}=$proc_stat[15] / $hz;
-				$vm_info->{systime}=$proc_stat[16] / $hz;
+				$vm_info->{majflt}=$proc_stat[10];
+				$vm_info->{minflt}=$proc_stat[9];
+				$vm_info->{usertime}=$proc_stat[13] / $hz;
+				$vm_info->{systime}=$proc_stat[14] / $hz;
 			};
 
 			eval{
