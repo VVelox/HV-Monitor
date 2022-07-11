@@ -40,6 +40,7 @@ These are all relevant to `.data` in the JSON.
 - systime :: Accumulated system CPU time.
 - usertime :: Accumulated user CPU time.
 - vsz :: Virtual memory size in Kbytes.
+- disks :: A hash of disk info.
 
 The interface hash stats are as below.
 
@@ -71,3 +72,7 @@ these.
 | OFF         | 8   | Generic off                         |
 | UNKNOWN     | 9   | Unknown                             |
 
+Disk hash is as below.
+
+- allocated :: Number of bytes allocated to a disk.
+- in_use :: Number of bytes in use by the disk.

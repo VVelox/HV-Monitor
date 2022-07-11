@@ -55,7 +55,7 @@ sub new {
 sub run {
 	my $self = $_[0];
 
-	my $hz=`getconf CLK_TCK`;
+	my $hz = `getconf CLK_TCK`;
 	chomp($hz);
 
 	my $list_raw = `virsh list  --all --name`;
@@ -132,9 +132,10 @@ sub run {
 
 	# values that should be totaled
 	my @total = (
-		'usertime', 'pmem',   'oublk', 'minflt', 'pcpu',   'mem_alloc', 'nvcsw',
-		'snaps',    'rss',    'snaps_size', 'cpus',  'cow',    'nivcsw', 'systime',   'vsz',
-		'etimes',   'majflt', 'inblk',      'nswap'
+		'usertime', 'pmem',       'oublk', 'minflt',     'pcpu',   'mem_alloc',
+		'nvcsw',    'snaps',      'rss',   'snaps_size', 'cpus',   'cow',
+		'nivcsw',   'systime',    'vsz',   'etimes',     'majflt', 'inblk',
+		'nswap',    'disk_alloc', 'disk_in_use'
 	);
 
 	foreach my $vm (@VMs) {
@@ -180,6 +181,9 @@ sub run {
 			systime      => 0,
 			usertime     => 0,
 			vsz          => 0,
+			disk_alloc   => 0,
+			disk_in_use  => 0,
+			disks        => {},
 		};
 
 		# https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainState
@@ -205,12 +209,12 @@ sub run {
 
 			@hv_args = split( /\n/, `cat /proc/$pid/cmdline | strings` );
 
-			my $ps_info=`ps -q $pid --no-headers -o pcpu,pmem,etimes,vsz,pri,nice`;
+			my $ps_info = `ps -q $pid --no-headers -o pcpu,pmem,etimes,vsz,pri,nice`;
 			chomp($ps_info);
-			$ps_info=~s/^[\ \t]*//;
-			$ps_info=~s/[\ \t]*$//;
+			$ps_info =~ s/^[\ \t]*//;
+			$ps_info =~ s/[\ \t]*$//;
 			( $vm_info->{pcpu}, $vm_info->{pmem}, $vm_info->{etimes}, $vm_info->{vsz}, $vm_info->{nice} )
-				= split(/[\ \t]+/, $ps_info);
+				= split( /[\ \t]+/, $ps_info );
 
 			my $console_type    = 'unknown';
 			my $console_options = $command;
@@ -226,30 +230,30 @@ sub run {
 			$vm_info->{console_type} = $console_type;
 			$vm_info->{console}      = $console_options;
 
-			eval{
-				my $proc_stat_raw=read_file('/proc/'.$pid.'/stat');
-				my @proc_stat=split(/[\ \t]+/,$proc_stat_raw);
-				$vm_info->{majflt}=$proc_stat[10];
-				$vm_info->{minflt}=$proc_stat[9];
-				$vm_info->{usertime}=$proc_stat[13] / $hz;
-				$vm_info->{systime}=$proc_stat[14] / $hz;
+			eval {
+				my $proc_stat_raw = read_file( '/proc/' . $pid . '/stat' );
+				my @proc_stat     = split( /[\ \t]+/, $proc_stat_raw );
+				$vm_info->{majflt}   = $proc_stat[10];
+				$vm_info->{minflt}   = $proc_stat[9];
+				$vm_info->{usertime} = $proc_stat[13] / $hz;
+				$vm_info->{systime}  = $proc_stat[14] / $hz;
 			};
 
-			eval{
-				my $proc_status_raw=read_file('/proc/'.$pid.'/status');
-				my $proc_status={};
-				foreach my $line ( split(/\n/, $proc_status_raw) ) {
-					my ( $status_key, $status_value ) = split(/\:/, $line);
-					$status_value=~s/^[\ \t]*//;
-					$status_value=~s/[\ \t]*$//;
-					$proc_status->{$status_key}=$status_value;
+			eval {
+				my $proc_status_raw = read_file( '/proc/' . $pid . '/status' );
+				my $proc_status     = {};
+				foreach my $line ( split( /\n/, $proc_status_raw ) ) {
+					my ( $status_key, $status_value ) = split( /\:/, $line );
+					$status_value =~ s/^[\ \t]*//;
+					$status_value =~ s/[\ \t]*$//;
+					$proc_status->{$status_key} = $status_value;
 				}
-				$vm_info->{nvcsw}=$proc_status->{voluntary_ctxt_switches};
-				$vm_info->{nivcsw}=$proc_status->{nonvoluntary_ctxt_switches};
+				$vm_info->{nvcsw}  = $proc_status->{voluntary_ctxt_switches};
+				$vm_info->{nivcsw} = $proc_status->{nonvoluntary_ctxt_switches};
 			};
 		}
 
-		$vm_info->{rss}=$domstats->{'balloon.rss'},
+		$vm_info->{rss} = $domstats->{'balloon.rss'};
 
 		#
 		# process interfaces
@@ -312,8 +316,8 @@ sub run {
 		#
 		# get the snapshot count
 		#
-		my @snaps = split(/\n/,`virsh snapshot-list $vm`);
-		$vm_info->{snaps}=$#snaps - 1;
+		my @snaps = split( /\n/, `virsh snapshot-list $vm` );
+		$vm_info->{snaps} = $#snaps - 1;
 
 		#
 		# total the status totals

@@ -110,9 +110,10 @@ sub run {
 
 	# values that should be totaled
 	my @total = (
-		'usertime', 'pmem',    'oublk', 'minflt', 'pcpu',   'mem_alloc', 'nvcsw',
-		'snaps',    'rss',    'snaps_size', 'cpus',  'cow',    'nivcsw', 'systime',   'vsz',
-		'etimes',   'majflt', 'inblk',      'nswap'
+		'usertime', 'pmem',       'oublk', 'minflt',     'pcpu',   'mem_alloc',
+		'nvcsw',    'snaps',      'rss',   'snaps_size', 'cpus',   'cow',
+		'nivcsw',   'systime',    'vsz',   'etimes',     'majflt', 'inblk',
+		'nswap',    'disk_alloc', 'disk_in_use'
 	);
 
 	my @bls_split = split( /\n/, $bls_raw );
@@ -151,6 +152,9 @@ sub run {
 			systime      => 0,
 			usertime     => 0,
 			vsz          => 0,
+			disk_alloc   => 0,
+			disk_in_use  => 0,
+			disks        => {},
 		};
 
 		if ( $status =~ /^On/ ) {
@@ -245,7 +249,7 @@ sub run {
 					odrop  => 0,
 				};
 
-				$vm_info->{ifs}{ 'nic'.$nic } = $nic_info;
+				$vm_info->{ifs}{ 'nic' . $nic } = $nic_info;
 
 				$bnics_int++;
 			}
