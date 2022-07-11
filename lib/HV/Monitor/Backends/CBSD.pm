@@ -114,7 +114,7 @@ sub run {
 		'nvcsw',    'snaps',      'rss',         'snaps_size', 'cpus',   'cow',
 		'nivcsw',   'systime',    'vsz',         'etimes',     'majflt', 'inblk',
 		'nswap',    'disk_alloc', 'disk_in_use', 'rbytes',     'rtime',  'rreqs',
-		'wbytes',   'wreqs',      'ftime',       'freqs', 'wtime',
+		'wbytes',   'wreqs',      'ftime',       'freqs',      'wtime',  'disk_on_disk',
 	);
 
 	my @bls_split = split( /\n/, $bls_raw );
@@ -155,6 +155,7 @@ sub run {
 			vsz          => 0,
 			disk_alloc   => 0,
 			disk_in_use  => 0,
+			disk_on_disk => 0,
 			disks        => {},
 			rtime        => 0,
 			rreqs        => 0,
@@ -301,9 +302,10 @@ sub run {
 
 			foreach my $to_total (@total) {
 				if ( defined( $vm_info->{$to_total} ) ) {
-					if (defined($return_hash->{totals}{$to_total})) {
+					if ( defined( $return_hash->{totals}{$to_total} ) ) {
 						$return_hash->{totals}{$to_total} = $return_hash->{totals}{$to_total} + $vm_info->{$to_total};
-					}else {
+					}
+					else {
 						$return_hash->{totals}{$to_total} = $vm_info->{$to_total};
 					}
 				}

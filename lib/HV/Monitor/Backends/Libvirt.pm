@@ -136,7 +136,7 @@ sub run {
 		'nvcsw',    'snaps',      'rss',         'snaps_size', 'cpus',   'cow',
 		'nivcsw',   'systime',    'vsz',         'etimes',     'majflt', 'inblk',
 		'nswap',    'disk_alloc', 'disk_in_use', 'rbytes',     'rtime',  'rreqs',
-		'wbytes',   'wreqs',      'ftime',       'freqs', 'wtime',
+		'wbytes',   'wreqs',      'ftime',       'freqs',      'wtime',  'disk_on_disk',
 	);
 
 	foreach my $vm (@VMs) {
@@ -184,6 +184,7 @@ sub run {
 			vsz          => 0,
 			disk_alloc   => 0,
 			disk_in_use  => 0,
+			disk_on_disk => 0,
 			disks        => {},
 		};
 
@@ -304,16 +305,17 @@ sub run {
 		my $block_int = 0;
 		while ( defined( $domstats->{ 'block.' . $block_int . '.name' } ) ) {
 			my $disk_info = {
-				in_use => $domstats->{ 'block.' . $block_int . '.physical' },
-				alloc  => $domstats->{ 'block.' . $block_int . '.capacity' },
-				rbytes => 0,
-				rtime  => 0,
-				rreqs  => 0,
-				wbytes => 0,
-				wtime  => 0,
-				wreqs  => 0,
-				freqs  => 0,
-				ftime  => 0,
+				in_use  => $domstats->{ 'block.' . $block_int . '.allocation' },
+				on_disk => $domstats->{ 'block.' . $block_int . '.physical' },
+				alloc   => $domstats->{ 'block.' . $block_int . '.capacity' },
+				rbytes  => 0,
+				rtime   => 0,
+				rreqs   => 0,
+				wbytes  => 0,
+				wtime   => 0,
+				wreqs   => 0,
+				freqs   => 0,
+				ftime   => 0,
 			};
 
 			if ( defined( $domstats->{ 'block.' . $block_int . '.rd.bytes' } ) ) {
@@ -337,6 +339,10 @@ sub run {
 			}
 
 			$vm_info->{disks}{ $domstats->{ 'block.' . $block_int . '.name' } } = $disk_info;
+
+			$vm_info->{disk_alloc} += $disk_info->{alloc};
+			$vm_info->{disk_in_use} += $disk_info->{in_use};
+			$vm_info->{disk_on_disk} += $disk_info->{on_disk};
 
 			$block_int++;
 		}
@@ -382,9 +388,10 @@ sub run {
 
 		foreach my $to_total (@total) {
 			if ( defined( $vm_info->{$to_total} ) ) {
-				if (defined($return_hash->{totals}{$to_total})) {
+				if ( defined( $return_hash->{totals}{$to_total} ) ) {
 					$return_hash->{totals}{$to_total} = $return_hash->{totals}{$to_total} + $vm_info->{$to_total};
-				}else {
+				}
+				else {
 					$return_hash->{totals}{$to_total} = $vm_info->{$to_total};
 				}
 			}
