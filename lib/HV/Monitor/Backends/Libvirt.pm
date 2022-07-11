@@ -4,6 +4,7 @@ use 5.006;
 use strict;
 use warnings;
 use JSON;
+use File::Slurp qw(read_file);
 
 =head1 NAME
 
@@ -53,6 +54,9 @@ sub new {
 
 sub run {
 	my $self = $_[0];
+
+	my $hz=`getconf CLK_TCK`;
+	chomp($hz);
 
 	my $list_raw = `virsh list  --all --name`;
 	if ( $? != 0 ) {
@@ -158,13 +162,8 @@ sub run {
 			console      => '',
 			snaps_size   => 0,
 			ifs          => {},
-			syscw        => 0,
-			syscw        => 0,
-			rchar        => 0,
-			wchar        => 0,
 			rbytes       => 0,
 			wbytes       => 0,
-			cwbytes      => 0,
 			etimes       => 0,
 			pmem         => 0,
 			cow          => 0,
@@ -226,6 +225,15 @@ sub run {
 			$console_options =~ s/[\t\ ].*$//;
 			$vm_info->{console_type} = $console_type;
 			$vm_info->{console}      = $console_options;
+
+			eval{
+				my $proc_stat_raw=read_file('/proc/'.$pid.'/stat');
+				my @proc_stat=split(/[\ \t]+/,$proc_stat_raw);
+				$vm_info->{majflt}=$proc_stat[12];
+				$vm_info->{minflt}=$proc_stat[10];
+				$vm_info->{usertime}=$proc_stat[15] / $hz;
+				$vm_info->{systime}=$proc_stat[16] / $hz;
+			};
 		}
 
 		$vm_info->{rss}=$domstats->{'balloon.rss'},
@@ -273,7 +281,7 @@ sub run {
 		}
 
 		#
-		# process interfaces
+		# process block devices
 		#
 		my $block_int = 0;
 		while ( defined( $domstats->{ 'block.' . $block_int . '.name' } ) ) {
