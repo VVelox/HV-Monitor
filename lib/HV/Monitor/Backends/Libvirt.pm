@@ -253,9 +253,9 @@ sub run {
 				$vm_info->{nvcsw}  = $proc_status->{voluntary_ctxt_switches};
 				$vm_info->{nivcsw} = $proc_status->{nonvoluntary_ctxt_switches};
 			};
-		}
 
-		$vm_info->{rss} = $domstats->{'balloon.rss'};
+			$vm_info->{rss} = $domstats->{'balloon.rss'};
+		}
 
 		#
 		# process interfaces
