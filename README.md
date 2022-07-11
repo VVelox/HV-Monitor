@@ -20,7 +20,7 @@ These are all relevant to `.data` in the JSON.
 - status_int :: Integer of the current status of the VM.
 - console_type :: Console type, VNC or Spice.
 - console :: Console address and port.
-- snaps_size :: Total size of snapshots.
+- snaps_size :: Total size of snapshots. Not available for libvirt.
 - snaps :: The number of snapshots for a VM.
 - ifs :: Interface array. The name matches `/nic[0-9]+/`.
 - rbytes :: Total write bytes.
