@@ -65,8 +65,29 @@ sub run {
 		};
 	}
 
+	# break down the ZFS and find likely disks
+	my @zfs_list=split(/\n/,`zfs list -p`);
+	my $zfs_list_int=1;
+	my $zfs={};
+	my @zfs_keys;
+	foreach my $line (@zfs_list) {
+		chomp($line);
+		my ($zfs_name, $zfs_used, $zfs_avail, $zfs_refer, $zfs_mount)=split(/[\ \t]+/, $line,5);
+		# make sure it is not mounted and that it ends in raw or vhd
+		if ($zfs_mount =~ /^\-$/ && $zfs_name=~/[A-Za-z\-\_1-9]+\/[A-Za-z\-\_1-9]+\/[A-Za-z\-\_1-9]+\.[VvRr][HhAa][DdWw]$/) {
+			$zfs->{$zfs_name}=$zfs_used;
+			push(@zfs_keys, $zfs_name);
+		}
+		$zfs_list_int++;
+	}
+
+	my $disk_list_raw=`cbsd bhyve-dsk-list header=0 display=jname,dsk_path,dsk_size | sed -e 's/\x1b\[[0-9;]*m//g'`;
+
 	#remove color codes
 	$bls_raw =~ s/\^.{1,7}?m//g;
+	$disk_list_raw =~ s/\^.{1,7}?m//g;
+
+	my @disk_list=split(/\n/, $disk_list_raw);
 
 	my @VMs;
 

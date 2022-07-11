@@ -340,9 +340,12 @@ sub run {
 
 			$vm_info->{disks}{ $domstats->{ 'block.' . $block_int . '.name' } } = $disk_info;
 
-			$vm_info->{disk_alloc} += $disk_info->{alloc};
-			$vm_info->{disk_in_use} += $disk_info->{in_use};
-			$vm_info->{disk_on_disk} += $disk_info->{on_disk};
+			# skip adding ISO files to the VM total, these are likely used multiple times
+			if ( $domstats->{ 'block.' . $block_int . '.path' } !~ /\.[Ii][Ss][Oo]$/) {
+				$vm_info->{disk_alloc} += $disk_info->{alloc};
+				$vm_info->{disk_in_use} += $disk_info->{in_use};
+				$vm_info->{disk_on_disk} += $disk_info->{on_disk};
+			}
 
 			$block_int++;
 		}
