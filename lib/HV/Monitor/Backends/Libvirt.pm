@@ -313,7 +313,7 @@ sub run {
 		# get the snapshot count
 		#
 		my @snaps = split(/\n/,`virsh snapshot-list $vm`);
-		$vm_info->{snaps}=$#snaps - 2;
+		$vm_info->{snaps}=$#snaps - 1;
 
 		#
 		# total the status totals
