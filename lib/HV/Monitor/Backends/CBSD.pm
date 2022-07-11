@@ -66,28 +66,31 @@ sub run {
 	}
 
 	# break down the ZFS and find likely disks
-	my @zfs_list=split(/\n/,`zfs list -p`);
-	my $zfs_list_int=1;
-	my $zfs={};
+	my @zfs_list     = split( /\n/, `zfs list -p` );
+	my $zfs_list_int = 1;
+	my $zfs          = {};
 	my @zfs_keys;
 	foreach my $line (@zfs_list) {
 		chomp($line);
-		my ($zfs_name, $zfs_used, $zfs_avail, $zfs_refer, $zfs_mount)=split(/[\ \t]+/, $line,5);
+		my ( $zfs_name, $zfs_used, $zfs_avail, $zfs_refer, $zfs_mount ) = split( /[\ \t]+/, $line, 5 );
+
 		# make sure it is not mounted and that it ends in raw or vhd
-		if ($zfs_mount =~ /^\-$/ && $zfs_name=~/[A-Za-z\-\_1-9]+\/[A-Za-z\-\_1-9]+\/[A-Za-z\-\_1-9]+\.[VvRr][HhAa][DdWw]$/) {
-			$zfs->{$zfs_name}=$zfs_used;
-			push(@zfs_keys, $zfs_name);
+		if (   $zfs_mount =~ /^\-$/
+			&& $zfs_name =~ /[A-Za-z\-\_1-9]+\/[A-Za-z\-\_1-9]+\/[A-Za-z\-\_1-9]+\.[VvRr][HhAa][DdWw]$/ )
+		{
+			$zfs->{$zfs_name} = $zfs_used;
+			push( @zfs_keys, $zfs_name );
 		}
 		$zfs_list_int++;
 	}
 
-	my $disk_list_raw=`cbsd bhyve-dsk-list header=0 display=jname,dsk_path,dsk_size | sed -e 's/\x1b\[[0-9;]*m//g'`;
+	my $disk_list_raw = `cbsd bhyve-dsk-list header=0 display=jname,dsk_path,dsk_size | sed -e 's/\x1b\[[0-9;]*m//g'`;
 
 	#remove color codes
-	$bls_raw =~ s/\^.{1,7}?m//g;
+	$bls_raw       =~ s/\^.{1,7}?m//g;
 	$disk_list_raw =~ s/\^.{1,7}?m//g;
 
-	my @disk_list=split(/\n/, $disk_list_raw);
+	my @disk_list = split( /\n/, $disk_list_raw );
 
 	my @VMs;
 
@@ -208,41 +211,6 @@ sub run {
 				}
 			}
 
-			# process the snapshots
-			my $snaplist_raw = `cbsd jsnapshot mode=list jname=$vm | sed -e 's/\x1b\[[0-9;]*m//g'`;
-			my @snaplist     = split( /\n/, $snaplist_raw );
-
-			# line 0 is always the header
-			my $snaplist_int = 1;
-			while ( defined( $snaplist[$snaplist_int] ) ) {
-				chomp( $snaplist[$snaplist_int] );
-
-				my ( $jname, $snapname, $snap_creation, $refer ) = split( /[\ \t]+/, $snaplist[$snaplist_int] );
-
-				if ( $refer =~ /[Kk]$/ ) {
-					$refer =~ s/[Kk]$//;
-					$refer = $refer * 1000;
-				}
-				elsif ( $refer =~ /[Mm]$/ ) {
-					$refer =~ s/[Mm]$//;
-					$refer = $refer * 1000000;
-				}
-				elsif ( $refer =~ /[Gg]$/ ) {
-					$refer =~ s/[Gg]$//;
-					$refer = $refer * 1000000000;
-				}
-				elsif ( $refer =~ /[Tt]$/ ) {
-					$refer =~ s/[Tt]$//;
-					$refer = $refer * 1000000000000;
-				}
-
-				$vm_info->{snaps_size} = $vm_info->{snaps_size} + $refer;
-
-				$snaplist_int++;
-			}
-
-			$vm_info->{snaps} = $#snaplist;
-
 			my ( $minutes, $seconds ) = split( /\:/, $vm_info->{systime} );
 			$vm_info->{systime} = ( $minutes * 60 ) + $seconds;
 
@@ -341,6 +309,46 @@ sub run {
 			# but it is very unclear what those are
 			$vm_info->{status_int} = 9;
 			$return_hash->{totals}{unknown}++;
+		}
+
+		#
+		# process the snapshots
+		#
+		my $snaplist_raw = `cbsd jsnapshot mode=list jname=$vm | sed -e 's/\x1b\[[0-9;]*m//g'`;
+		my @snaplist     = split( /\n/, $snaplist_raw );
+		# line 0 is always the header
+		my $snaplist_int = 1;
+		while ( defined( $snaplist[$snaplist_int] ) ) {
+			chomp( $snaplist[$snaplist_int] );
+			my ( $jname, $snapname, $snap_creation, $refer ) = split( /[\ \t]+/, $snaplist[$snaplist_int] );
+			if ( $refer =~ /[Kk]$/ ) {
+				$refer =~ s/[Kk]$//;
+				$refer = $refer * 1000;
+			}
+			elsif ( $refer =~ /[Mm]$/ ) {
+				$refer =~ s/[Mm]$//;
+				$refer = $refer * 1000000;
+			}
+			elsif ( $refer =~ /[Gg]$/ ) {
+				$refer =~ s/[Gg]$//;
+				$refer = $refer * 1000000000;
+			}
+			elsif ( $refer =~ /[Tt]$/ ) {
+				$refer =~ s/[Tt]$//;
+				$refer = $refer * 1000000000000;
+			}
+			$vm_info->{snaps_size} = $vm_info->{snaps_size} + $refer;
+			$snaplist_int++;
+		}
+		$vm_info->{snaps} = $#snaplist;
+
+		#
+		# go through the disk list and for matching ones
+		#
+		foreach my $line (@disk_list) {
+			if ($line =~ /^$vm[\t\ ]/) {
+				
+			}
 		}
 
 		$return_hash->{VMs}{$vm} = $vm_info;
