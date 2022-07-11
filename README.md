@@ -27,8 +27,8 @@ These are all relevant to `.data` in the JSON.
 - wbytes :: Total read bytes.
 - etimes :: Elapsed running time, in decimal integer seconds.
 - cow :: Number of copy-on-write faults.
-- majflt :: Total page faults.
-- minflt :: Total page reclaims.
+- majflt :: Total page major faults.
+- minflt :: Total page minor faults.
 - nice :: Proc scheduling increment.
 - nivcsw :: Total involuntary context switches.
 - nswap :: Total swaps in/out.
