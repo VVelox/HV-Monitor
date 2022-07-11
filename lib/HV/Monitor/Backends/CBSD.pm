@@ -351,20 +351,6 @@ sub run {
 				ftime   => 0,
 			};
 			if ( $line =~ /^$vm[\t\ ]/ ) {
-				my $disk_info = {
-					in_use  => 0,
-					on_disk => 0,
-					alloc   => 0,
-					rbytes  => 0,
-					rtime   => 0,
-					rreqs   => 0,
-					wbytes  => 0,
-					wtime   => 0,
-					wreqs   => 0,
-					freqs   => 0,
-					ftime   => 0,
-				};
-
 				my ( $vm2, $disk_name, $size ) = split( /[\t\ ]+/, $line );
 				$size =~ s/\/.*$//;
 				if ( $size =~ /[Kk]$/ ) {
@@ -385,6 +371,7 @@ sub run {
 				}
 				$disk_info->{alloc} = $size;
 
+				my $zfs_key_matched=0;
 				foreach my $zfs_key (@zfs_keys) {
 					if ( $zfs_key =~ /\/$vm\/$disk_name$/ ) {
 						my ($disk_used)
@@ -394,15 +381,15 @@ sub run {
 						$disk_info->{on_disk} = $disk_used;
 						$disk_info->{in_use}  = $disk_used;
 					}
-					else {
-						$disk_info->{on_disk} = $size;
-						$disk_info->{in_use}  = $size;
-					}
+				}
+				if (!$zfs_key_matched) {
+					$disk_info->{on_disk} = $size;
+					$disk_info->{in_use}  = $size;
 				}
 
-				$vm_info->{disk_alloc} = $disk_info->{alloc};
+				$vm_info->{disk_alloc} += $disk_info->{alloc};
 				$vm_info->{disk_on_disk} += $disk_info->{on_disk};
-				$vm_info->{disk_in_use} = $disk_info->{in_use};
+				$vm_info->{disk_in_use} += $disk_info->{in_use};
 
 				$vm_info->{disks}{$disk_name} = $disk_info;
 			}
