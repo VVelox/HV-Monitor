@@ -65,6 +65,9 @@ sub run {
 		};
 	}
 
+	# get the zfs stats
+	my @zfs_stats=split(/\n/, `sysctl kstat.zfs`);
+
 	# break down the ZFS and find likely disks
 	my @zfs_list     = split( /\n/, `zfs list -p` );
 	my $zfs_list_int = 1;
@@ -380,6 +383,35 @@ sub run {
 						$disk_used =~ s/.*[\ \t]+used[\ \t]+//;
 						$disk_info->{on_disk} = $disk_used;
 						$disk_info->{in_use}  = $disk_used;
+
+						my $kstat_int=0;
+						my $kstat_matched=1;
+						while (defined( $zfs_stats[$kstat_int] ) && (!$kstat_matched)) {
+							if ( $zfs_stats[$kstat_int] =~ /^kstat\.zfs\..*dataset.objset\-.*\: $zfs_key/ ) {
+								$kstat_matched=1;
+
+								my $kstat_int_last=$kstat_int+5;
+								while ( $kstat_int <= $kstat_int_last ) {
+									if ($zfs_stats[$kstat_int] =~ /\.nread\:[\t\ ]/) {
+										$zfs_stats[$kstat_int]=~s/.*\:[\t\ ]+//;
+										$disk_info->{rbytes}=$zfs_stats[$kstat_int];
+									}elsif($zfs_stats[$kstat_int] =~ /\.reads\:[\t\ ]/) {
+										$zfs_stats[$kstat_int]=~s/.*\:[\t\ ]+//;
+										$disk_info->{rreqs}=$zfs_stats[$kstat_int];
+									}elsif($zfs_stats[$kstat_int] =~ /\.nwritten\:[\t\ ]/) {
+										$zfs_stats[$kstat_int]=~s/.*\:[\t\ ]+//;
+										$disk_info->{wbytes}=$zfs_stats[$kstat_int];
+									}elsif($zfs_stats[$kstat_int] =~ /\.writes\:[\t\ ]/) {
+										$zfs_stats[$kstat_int]=~s/.*\:[\t\ ]+//;
+										$disk_info->{wreqs}=$zfs_stats[$kstat_int];
+									}
+
+									$kstat_int++;
+								}
+							}
+
+							$kstat_int++;
+						}
 
 						$zfs_key_matched=1;
 					}
