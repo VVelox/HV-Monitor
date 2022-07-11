@@ -3,7 +3,6 @@ package HV::Monitor::Backends::CBSD;
 use 5.006;
 use strict;
 use warnings;
-use BSD::Sysctl 'sysctl';
 
 =head1 NAME
 
