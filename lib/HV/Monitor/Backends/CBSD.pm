@@ -3,6 +3,7 @@ package HV::Monitor::Backends::CBSD;
 use 5.006;
 use strict;
 use warnings;
+use BSD::Sysctl 'sysctl';
 
 =head1 NAME
 
@@ -385,29 +386,16 @@ sub run {
 						$disk_info->{in_use}  = $disk_used;
 
 						my $kstat_int=0;
-						my $kstat_matched=1;
+						my $kstat_matched=0;
 						while (defined( $zfs_stats[$kstat_int] ) && (!$kstat_matched)) {
 							if ( $zfs_stats[$kstat_int] =~ /^kstat\.zfs\..*dataset.objset\-.*\: $zfs_key/ ) {
 								$kstat_matched=1;
-
-								my $kstat_int_last=$kstat_int+5;
-								while ( $kstat_int <= $kstat_int_last ) {
-									if ($zfs_stats[$kstat_int] =~ /\.nread\:[\t\ ]/) {
-										$zfs_stats[$kstat_int]=~s/.*\:[\t\ ]+//;
-										$disk_info->{rbytes}=$zfs_stats[$kstat_int];
-									}elsif($zfs_stats[$kstat_int] =~ /\.reads\:[\t\ ]/) {
-										$zfs_stats[$kstat_int]=~s/.*\:[\t\ ]+//;
-										$disk_info->{rreqs}=$zfs_stats[$kstat_int];
-									}elsif($zfs_stats[$kstat_int] =~ /\.nwritten\:[\t\ ]/) {
-										$zfs_stats[$kstat_int]=~s/.*\:[\t\ ]+//;
-										$disk_info->{wbytes}=$zfs_stats[$kstat_int];
-									}elsif($zfs_stats[$kstat_int] =~ /\.writes\:[\t\ ]/) {
-										$zfs_stats[$kstat_int]=~s/.*\:[\t\ ]+//;
-										$disk_info->{wreqs}=$zfs_stats[$kstat_int];
-									}
-
-									$kstat_int++;
-								}
+								my $zfs_stat_base=$zfs_stats[$kstat_int];
+								$zfs_stat_base=~s/\.dataset\_name\:.*$//;
+								my ( $disk_info->{rreqs} ) = grep(/^zfs_stat_base\.reads/, @zfs_stats);
+								my ( $disk_info->{wreqs} ) = grep(/^zfs_stat_base\.writes/, @zfs_stats);
+								my ( $disk_info->{wbytes} ) = grep(/^zfs_stat_base\.nwritten/, @zfs_stats);
+								my ( $disk_info->{rbytes} ) = grep(/^zfs_stat_base\.nread/, @zfs_stats);
 							}
 
 							$kstat_int++;
