@@ -262,7 +262,7 @@ sub run {
 			}
 
 			# go through each
-			my @add_stats = ( 'ipkts', 'ierrs', 'idrop', 'ibytes', 'opkts', 'oerrs', 'coll', 'odrop' );
+			my @add_stats = ( 'ipkts', 'ierrs', 'idrop', 'ibytes', 'opkts', 'obytes', 'oerrs', 'coll', 'odrop' );
 			foreach my $interface (@ifs) {
 				my $if_raw = `ifconfig $interface | grep -E 'description: ' | cut -d: -f 2- | head -n 1`;
 				chomp($if_raw);
