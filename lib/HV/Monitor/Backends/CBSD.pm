@@ -110,10 +110,11 @@ sub run {
 
 	# values that should be totaled
 	my @total = (
-		'usertime', 'pmem',       'oublk', 'minflt',     'pcpu',   'mem_alloc',
-		'nvcsw',    'snaps',      'rss',   'snaps_size', 'cpus',   'cow',
-		'nivcsw',   'systime',    'vsz',   'etimes',     'majflt', 'inblk',
-		'nswap',    'disk_alloc', 'disk_in_use'
+		'usertime', 'pmem',       'oublk',       'minflt',     'pcpu',   'mem_alloc',
+		'nvcsw',    'snaps',      'rss',         'snaps_size', 'cpus',   'cow',
+		'nivcsw',   'systime',    'vsz',         'etimes',     'majflt', 'inblk',
+		'nswap',    'disk_alloc', 'disk_in_use', 'rbytes',     'rtime',  'rreqs',
+		'wbytes',   'wreqs',      'ftime',       'freqs'
 	);
 
 	my @bls_split = split( /\n/, $bls_raw );
@@ -155,6 +156,11 @@ sub run {
 			disk_alloc   => 0,
 			disk_in_use  => 0,
 			disks        => {},
+			rtime        => 0,
+			rreqs        => 0,
+			wreqs        => 0,
+			wtime        => 0,
+			freqs        => 0,
 		};
 
 		if ( $status =~ /^On/ ) {

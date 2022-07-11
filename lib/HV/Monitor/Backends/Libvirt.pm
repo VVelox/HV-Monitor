@@ -132,10 +132,11 @@ sub run {
 
 	# values that should be totaled
 	my @total = (
-		'usertime', 'pmem',       'oublk', 'minflt',     'pcpu',   'mem_alloc',
-		'nvcsw',    'snaps',      'rss',   'snaps_size', 'cpus',   'cow',
-		'nivcsw',   'systime',    'vsz',   'etimes',     'majflt', 'inblk',
-		'nswap',    'disk_alloc', 'disk_in_use'
+		'usertime', 'pmem',       'oublk',       'minflt',     'pcpu',   'mem_alloc',
+		'nvcsw',    'snaps',      'rss',         'snaps_size', 'cpus',   'cow',
+		'nivcsw',   'systime',    'vsz',         'etimes',     'majflt', 'inblk',
+		'nswap',    'disk_alloc', 'disk_in_use', 'rbytes',     'rtime',  'rreqs',
+		'wbytes',   'wreqs',      'ftime',       'freqs'
 	);
 
 	foreach my $vm (@VMs) {
@@ -302,13 +303,40 @@ sub run {
 		#
 		my $block_int = 0;
 		while ( defined( $domstats->{ 'block.' . $block_int . '.name' } ) ) {
+			my $disk_info = {
+				in_use => $domstats->{ 'block.' . $block_int . '.physical' },
+				alloc  => $domstats->{ 'block.' . $block_int . '.capacity' },
+				rbytes => 0,
+				rtime  => 0,
+				rreqs  => 0,
+				wbytes => 0,
+				wtime  => 0,
+				wreqs  => 0,
+				freqs  => 0,
+				ftime  => 0,
+			};
+
 			if ( defined( $domstats->{ 'block.' . $block_int . '.rd.bytes' } ) ) {
 				$vm_info->{rbytes} += $domstats->{ 'block.' . $block_int . '.rd.bytes' };
+				$vm_info->{rtime}  += $domstats->{ 'block.' . $block_int . '.rd.times' };
+				$vm_info->{rreqs}  += $domstats->{ 'block.' . $block_int . '.rd.reqs' };
+				$vm_info->{wbytes} += $domstats->{ 'block.' . $block_int . '.wr.bytes' };
+				$vm_info->{wtime}  += $domstats->{ 'block.' . $block_int . '.wr.times' };
+				$vm_info->{wreqs}  += $domstats->{ 'block.' . $block_int . '.wr.reqs' };
+				$vm_info->{ftime}  += $domstats->{ 'block.' . $block_int . '.fl.times' };
+				$vm_info->{freqs}  += $domstats->{ 'block.' . $block_int . '.fl.reqs' };
+
+				$disk_info->{rbytes} = $domstats->{ 'block.' . $block_int . '.rd.bytes' };
+				$disk_info->{rtime}  = $domstats->{ 'block.' . $block_int . '.rd.times' };
+				$disk_info->{rreqs}  = $domstats->{ 'block.' . $block_int . '.rd.reqs' };
+				$disk_info->{wbytes} = $domstats->{ 'block.' . $block_int . '.wr.bytes' };
+				$disk_info->{wtime}  = $domstats->{ 'block.' . $block_int . '.wr.times' };
+				$disk_info->{wreqs}  = $domstats->{ 'block.' . $block_int . '.wr.reqs' };
+				$disk_info->{ftime}  = $domstats->{ 'block.' . $block_int . '.fl.times' };
+				$disk_info->{freqs}  = $domstats->{ 'block.' . $block_int . '.fl.reqs' };
 			}
 
-			if ( defined( $domstats->{ 'block.' . $block_int . '.wr.bytes' } ) ) {
-				$vm_info->{wbytes} += $domstats->{ 'block.' . $block_int . '.wr.bytes' };
-			}
+			$vm_info->{disks}{ $domstats->{ 'block.' . $block_int . '.name' } } = $disk_info;
 
 			$block_int++;
 		}

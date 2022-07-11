@@ -74,5 +74,12 @@ these.
 
 Disk hash is as below.
 
-- allocated :: Number of bytes allocated to a disk.
+- alloc :: Number of bytes allocated to a disk.
 - in_use :: Number of bytes in use by the disk.
+- rbtyes :: Total bytes read.
+- rtime :: Total time in ns spent on reads.
+- rreqs :: Total read requests.
+- wbytes :: Total bytes written.
+- wreqs :: Total write requests.
+- ftime :: Total time in ns spent on flushes.
+- freqs :: Total flush requests.
