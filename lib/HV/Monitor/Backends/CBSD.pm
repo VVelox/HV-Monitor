@@ -380,6 +380,8 @@ sub run {
 						$disk_used =~ s/.*[\ \t]+used[\ \t]+//;
 						$disk_info->{on_disk} = $disk_used;
 						$disk_info->{in_use}  = $disk_used;
+
+						$zfs_key_matched=1;
 					}
 				}
 				if (!$zfs_key_matched) {
