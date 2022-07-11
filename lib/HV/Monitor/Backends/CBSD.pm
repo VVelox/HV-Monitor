@@ -289,16 +289,6 @@ sub run {
 				}
 			}
 
-			foreach my $to_total (@total) {
-				if ( defined( $vm_info->{$to_total} ) ) {
-					if ( defined( $return_hash->{totals}{$to_total} ) ) {
-						$return_hash->{totals}{$to_total} = $return_hash->{totals}{$to_total} + $vm_info->{$to_total};
-					}
-					else {
-						$return_hash->{totals}{$to_total} = $vm_info->{$to_total};
-					}
-				}
-			}
 		}
 		elsif ( $status =~ /^[Oo][Ff][Ff]/ ) {
 			$vm_info->{status_int} = 8;
@@ -316,6 +306,7 @@ sub run {
 		#
 		my $snaplist_raw = `cbsd jsnapshot mode=list jname=$vm | sed -e 's/\x1b\[[0-9;]*m//g'`;
 		my @snaplist     = split( /\n/, $snaplist_raw );
+
 		# line 0 is always the header
 		my $snaplist_int = 1;
 		while ( defined( $snaplist[$snaplist_int] ) ) {
@@ -347,35 +338,35 @@ sub run {
 		#
 		foreach my $line (@disk_list) {
 			my $disk_info = {
-							 in_use  => 0,
-							 on_disk => 0,
-							 alloc   => 0,
-							 rbytes  => 0,
-							 rtime   => 0,
-							 rreqs   => 0,
-							 wbytes  => 0,
-							 wtime   => 0,
-							 wreqs   => 0,
-							 freqs   => 0,
-							 ftime   => 0,
-							 };
-			if ($line =~ /^$vm[\t\ ]/) {
+				in_use  => 0,
+				on_disk => 0,
+				alloc   => 0,
+				rbytes  => 0,
+				rtime   => 0,
+				rreqs   => 0,
+				wbytes  => 0,
+				wtime   => 0,
+				wreqs   => 0,
+				freqs   => 0,
+				ftime   => 0,
+			};
+			if ( $line =~ /^$vm[\t\ ]/ ) {
 				my $disk_info = {
-								 in_use  => 0,
-								 on_disk => 0,
-								 alloc   => 0,
-								 rbytes  => 0,
-								 rtime   => 0,
-								 rreqs   => 0,
-								 wbytes  => 0,
-								 wtime   => 0,
-								 wreqs   => 0,
-								 freqs   => 0,
-								 ftime   => 0,
-								 };
+					in_use  => 0,
+					on_disk => 0,
+					alloc   => 0,
+					rbytes  => 0,
+					rtime   => 0,
+					rreqs   => 0,
+					wbytes  => 0,
+					wtime   => 0,
+					wreqs   => 0,
+					freqs   => 0,
+					ftime   => 0,
+				};
 
-				my ($vm2, $disk_name, $size) = split(/[\t\ ]+/, $line);
-				$size=~s/\/.*$//;
+				my ( $vm2, $disk_name, $size ) = split( /[\t\ ]+/, $line );
+				$size =~ s/\/.*$//;
 				if ( $size =~ /[Kk]$/ ) {
 					$size =~ s/[Kk]$//;
 					$size = $size * 1024;
@@ -392,22 +383,42 @@ sub run {
 					$size =~ s/[Tt]$//;
 					$size = $size * 1024 * 1024 * 1024 * 1024;
 				}
-				$disk_info->{alloc}=$size;
+				$disk_info->{alloc} = $size;
 
 				foreach my $zfs_key (@zfs_keys) {
-					if ($zfs_key =~ /\/$vm\/$disk_name$/) {
-						my ($disk_used)=grep(/\/$vm\/$disk_name[\t\ ]+used[\t\ ]+/, split(/\n/, `zfs get -p all $zfs_key`));
-						$disk_used=~s/[\ \t]+\-[\ \t]*$//;
-						$disk_used=~s/.*[\ \t]+used[\ \t]+//;
-						$disk_info->{on_disk}=$disk_used;
-						$disk_info->{in_use}=$disk_used;
-					}else {
-						$disk_info->{on_disk}=$size;
-						$disk_info->{in_use}=$size;
+					if ( $zfs_key =~ /\/$vm\/$disk_name$/ ) {
+						my ($disk_used)
+							= grep( /\/$vm\/$disk_name[\t\ ]+used[\t\ ]+/, split( /\n/, `zfs get -p all $zfs_key` ) );
+						$disk_used =~ s/[\ \t]+\-[\ \t]*$//;
+						$disk_used =~ s/.*[\ \t]+used[\ \t]+//;
+						$disk_info->{on_disk} = $disk_used;
+						$disk_info->{in_use}  = $disk_used;
+					}
+					else {
+						$disk_info->{on_disk} = $size;
+						$disk_info->{in_use}  = $size;
 					}
 				}
 
-				$vm_info->{disks}{$disk_name}=$disk_info;
+				$vm_info->{disk_alloc} = $disk_info->{alloc};
+				$vm_info->{disk_on_disk} += $disk_info->{on_disk};
+				$vm_info->{disk_in_use} = $disk_info->{in_use};
+
+				$vm_info->{disks}{$disk_name} = $disk_info;
+			}
+		}
+
+		#
+		# put the totals together
+		#
+		foreach my $to_total (@total) {
+			if ( defined( $vm_info->{$to_total} ) ) {
+				if ( defined( $return_hash->{totals}{$to_total} ) ) {
+					$return_hash->{totals}{$to_total} = $return_hash->{totals}{$to_total} + $vm_info->{$to_total};
+				}
+				else {
+					$return_hash->{totals}{$to_total} = $vm_info->{$to_total};
+				}
 			}
 		}
 
