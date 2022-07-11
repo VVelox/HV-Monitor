@@ -391,10 +391,10 @@ sub run {
 								$kstat_matched=1;
 								my $zfs_stat_base=$zfs_stats[$kstat_int];
 								$zfs_stat_base=~s/\.dataset\_name\:.*$//;
-								my ( $disk_info->{rreqs} ) = grep(/^zfs_stat_base\.reads/, @zfs_stats);
-								my ( $disk_info->{wreqs} ) = grep(/^zfs_stat_base\.writes/, @zfs_stats);
-								my ( $disk_info->{wbytes} ) = grep(/^zfs_stat_base\.nwritten/, @zfs_stats);
-								my ( $disk_info->{rbytes} ) = grep(/^zfs_stat_base\.nread/, @zfs_stats);
+								( $disk_info->{rreqs} ) = grep(/^zfs_stat_base\.reads/, @zfs_stats);
+								( $disk_info->{wreqs} ) = grep(/^zfs_stat_base\.writes/, @zfs_stats);
+								( $disk_info->{wbytes} ) = grep(/^zfs_stat_base\.nwritten/, @zfs_stats);
+								( $disk_info->{rbytes} ) = grep(/^zfs_stat_base\.nread/, @zfs_stats);
 							}
 
 							$kstat_int++;
