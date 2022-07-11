@@ -346,8 +346,61 @@ sub run {
 		# go through the disk list and for matching ones
 		#
 		foreach my $line (@disk_list) {
+			my $disk_info = {
+							 in_use  => 0,
+							 on_disk => 0,
+							 alloc   => 0,
+							 rbytes  => 0,
+							 rtime   => 0,
+							 rreqs   => 0,
+							 wbytes  => 0,
+							 wtime   => 0,
+							 wreqs   => 0,
+							 freqs   => 0,
+							 ftime   => 0,
+							 };
 			if ($line =~ /^$vm[\t\ ]/) {
-				
+				my $disk_info = {
+								 in_use  => 0,
+								 on_disk => 0,
+								 alloc   => 0,
+								 rbytes  => 0,
+								 rtime   => 0,
+								 rreqs   => 0,
+								 wbytes  => 0,
+								 wtime   => 0,
+								 wreqs   => 0,
+								 freqs   => 0,
+								 ftime   => 0,
+								 };
+
+				my ($vm2, $disk_name, $size) = split(/[\t\ ]+/, $line);
+				$size=~s/\/.*$//;
+				if ( $size =~ /[Kk]$/ ) {
+					$size =~ s/[Kk]$//;
+					$size = $size * 1024;
+				}
+				elsif ( $size =~ /[Mm]$/ ) {
+					$size =~ s/[Mm]$//;
+					$size = $size * 1024 * 1024;
+				}
+				elsif ( $size =~ /[Gg]$/ ) {
+					$size =~ s/[Gg]$//;
+					$size = $size * 1024 * 1024 * 1024;
+				}
+				elsif ( $size =~ /[Tt]$/ ) {
+					$size =~ s/[Tt]$//;
+					$size = $size * 1024 * 1024 * 1024 * 1024;
+				}
+				$disk_info->{alloc}=$size;
+
+				foreach my $zfs_key (@zfs_keys) {
+					if ($zfs_key =~ /\/$vm\/$disk_name$/) {
+						print $zfs_key."\n\n";
+					}
+				}
+
+				$vm_info->{disks}{$disk_name}=$disk_info;
 			}
 		}
 
