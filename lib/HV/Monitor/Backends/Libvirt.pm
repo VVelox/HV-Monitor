@@ -136,7 +136,7 @@ sub run {
 		'nvcsw',    'snaps',      'rss',         'snaps_size', 'cpus',   'cow',
 		'nivcsw',   'systime',    'vsz',         'etimes',     'majflt', 'inblk',
 		'nswap',    'disk_alloc', 'disk_in_use', 'rbytes',     'rtime',  'rreqs',
-		'wbytes',   'wreqs',      'ftime',       'freqs'
+		'wbytes',   'wreqs',      'ftime',       'freqs', 'wtime',
 	);
 
 	foreach my $vm (@VMs) {
@@ -382,7 +382,11 @@ sub run {
 
 		foreach my $to_total (@total) {
 			if ( defined( $vm_info->{$to_total} ) ) {
-				$return_hash->{totals}{$to_total} = $return_hash->{totals}{$to_total} + $vm_info->{$to_total};
+				if (defined($return_hash->{totals}{$to_total})) {
+					$return_hash->{totals}{$to_total} = $return_hash->{totals}{$to_total} + $vm_info->{$to_total};
+				}else {
+					$return_hash->{totals}{$to_total} = $vm_info->{$to_total};
+				}
 			}
 		}
 
