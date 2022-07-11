@@ -396,7 +396,11 @@ sub run {
 
 				foreach my $zfs_key (@zfs_keys) {
 					if ($zfs_key =~ /\/$vm\/$disk_name$/) {
-						my ($disk_used)=grep(/\/$vm\/$disk_name[\t\ ]+used[\t\ ]+/, split(/\n/, `zfs get -p all $disk_name`));
+						my ($disk_used)=grep(/\/$vm\/$disk_name[\t\ ]+used[\t\ ]+/, split(/\n/, `zfs get -p all $zfs_key`));
+						$disk_used=~s/[\ \t]+\-[\ \t]*$//;
+						$disk_used=~s/.*[\ \t]+used[\ \t]+//;
+						$disk_info->{on_disk}=$disk_used;
+						$disk_info->{in_use}=$disk_used;
 					}else {
 						$disk_info->{on_disk}=$size;
 						$disk_info->{in_use}=$size;
