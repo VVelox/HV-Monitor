@@ -234,6 +234,19 @@ sub run {
 				$vm_info->{usertime}=$proc_stat[15] / $hz;
 				$vm_info->{systime}=$proc_stat[16] / $hz;
 			};
+
+			eval{
+				my $proc_status_raw=read_file('/proc/'.$pid.'/status');
+				my $proc_status={};
+				foreach my $line ( split(/\n/, $proc_status_raw) ) {
+					my ( $status_key, $status_value ) = split(/\:/, $line);
+					$status_value=~s/^[\ \t]*//;
+					$status_value=~s/[\ \t]*$//;
+					$proc_status->{$status_key}=$status_value;
+				}
+				$vm_info->{nvcsw}=$proc_status->{voluntary_ctxt_switches};
+				$vm_info->{nivcsw}=$proc_status->{nonvoluntary_ctxt_switches};
+			};
 		}
 
 		$vm_info->{rss}=$domstats->{'balloon.rss'},
