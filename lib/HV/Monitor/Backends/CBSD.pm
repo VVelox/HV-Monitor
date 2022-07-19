@@ -395,6 +395,10 @@ sub run {
 								( $disk_info->{wreqs} ) = grep(/^$zfs_stat_base\.writes/, @zfs_stats);
 								( $disk_info->{wbytes} ) = grep(/^$zfs_stat_base\.nwritten/, @zfs_stats);
 								( $disk_info->{rbytes} ) = grep(/^$zfs_stat_base\.nread/, @zfs_stats);
+								$disk_info->{rreqs}=~s/^.*\:[\ \t]//;
+								$disk_info->{wreqs}=~s/^.*\:[\ \t]//;
+								$disk_info->{rbytes}=~s/^.*\:[\ \t]//;
+								$disk_info->{wbytes}=~s/^.*\:[\ \t]//;
 							}
 
 							$kstat_int++;
