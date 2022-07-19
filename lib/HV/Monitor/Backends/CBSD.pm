@@ -399,6 +399,11 @@ sub run {
 								$disk_info->{wreqs}=~s/^.*\:[\ \t]//;
 								$disk_info->{rbytes}=~s/^.*\:[\ \t]//;
 								$disk_info->{wbytes}=~s/^.*\:[\ \t]//;
+
+								$vm_info->{rreqs}+=$disk_info->{rreqs};
+								$vm_info->{rbytes}+=$disk_info->{rbytes};
+								$vm_info->{wreqs}+=$disk_info->{rreqs};
+								$vm_info->{wbytes}+=$disk_info->{rbytes};
 							}
 
 							$kstat_int++;
