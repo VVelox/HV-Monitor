@@ -194,6 +194,11 @@ sub run {
 			freqs        => 0,
 		};
 
+		# convert for megabytes to kilobytes
+		if (defined($vm_info->{mem_alloc}) && $vm_info->{mem_alloc}=~/^[0-9]+$/) {
+			$vm_info->{mem_alloc} = $vm_info->{mem_alloc} * 1024;
+		}
+
 		if ( $status =~ /^On/ ) {
 			$vm_info->{status_int} = 1;
 			$return_hash->{totals}{on}++;
