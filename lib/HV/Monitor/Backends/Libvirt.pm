@@ -61,7 +61,7 @@ sub run {
 	my $list_raw = `virsh list  --all --name`;
 	if ( $? != 0 ) {
 		return {
-			data        => {},
+			data        => { hv => 'libvirt' },
 			version     => $self->{version},
 			error       => 2,
 			errorString => '"virsh list  --all --name" exited non-zero',
@@ -97,6 +97,7 @@ sub run {
 
 	my $return_hash = {
 		VMs    => {},
+		hv     => 'libvirt',
 		totals => {
 			'usertime'    => 0,
 			'pmem'        => 0,
@@ -341,9 +342,9 @@ sub run {
 			$vm_info->{disks}{ $domstats->{ 'block.' . $block_int . '.name' } } = $disk_info;
 
 			# skip adding ISO files to the VM total, these are likely used multiple times
-			if ( $domstats->{ 'block.' . $block_int . '.path' } !~ /\.[Ii][Ss][Oo]$/) {
-				$vm_info->{disk_alloc} += $disk_info->{alloc};
-				$vm_info->{disk_in_use} += $disk_info->{in_use};
+			if ( $domstats->{ 'block.' . $block_int . '.path' } !~ /\.[Ii][Ss][Oo]$/ ) {
+				$vm_info->{disk_alloc}   += $disk_info->{alloc};
+				$vm_info->{disk_in_use}  += $disk_info->{in_use};
 				$vm_info->{disk_on_disk} += $disk_info->{on_disk};
 			}
 

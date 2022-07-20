@@ -57,7 +57,7 @@ sub run {
 		= `/bin/sh -c "cbsd bls header=0 node= display=jname,jid,vm_ram,vm_curmem,vm_cpus,pcpu,vm_os_type,ip4_addr,status,vnc alljails=0 2> /dev/null" | sed -e 's/\x1b\[[0-9;]*m//g'`;
 	if ( $? != 0 ) {
 		return {
-			data        => {},
+			data        => { hv => 'cbsd' },
 			version     => $self->{version},
 			error       => 2,
 			errorString =>
@@ -66,7 +66,7 @@ sub run {
 	}
 
 	# get the zfs stats
-	my @zfs_stats=split(/\n/, `sysctl kstat.zfs`);
+	my @zfs_stats = split( /\n/, `sysctl kstat.zfs` );
 
 	# break down the ZFS and find likely disks
 	my @zfs_list     = split( /\n/, `zfs list -p` );
@@ -102,6 +102,7 @@ sub run {
 
 	my $return_hash = {
 		VMs    => {},
+		hv     => 'CBSD',
 		totals => {
 			'usertime'    => 0,
 			'pmem'        => 0,
@@ -142,6 +143,7 @@ sub run {
 		'nivcsw',   'systime',    'vsz',         'etimes',     'majflt', 'inblk',
 		'nswap',    'disk_alloc', 'disk_in_use', 'rbytes',     'rtime',  'rreqs',
 		'wbytes',   'wreqs',      'ftime',       'freqs',      'wtime',  'disk_on_disk',
+		'snaps',
 	);
 
 	my @bls_split = split( /\n/, $bls_raw );
@@ -161,6 +163,7 @@ sub run {
 			console_type => 'vnc',
 			console      => $vnc,
 			snaps_size   => 0,
+			snaps        => 0,
 			ifs          => {},
 			rbytes       => 0,
 			wbytes       => 0,
@@ -374,7 +377,7 @@ sub run {
 				}
 				$disk_info->{alloc} = $size;
 
-				my $zfs_key_matched=0;
+				my $zfs_key_matched = 0;
 				foreach my $zfs_key (@zfs_keys) {
 					if ( $zfs_key =~ /\/$vm\/$disk_name$/ ) {
 						my ($disk_used)
@@ -384,42 +387,42 @@ sub run {
 						$disk_info->{on_disk} = $disk_used;
 						$disk_info->{in_use}  = $disk_used;
 
-						my $kstat_int=0;
-						my $kstat_matched=0;
-						while (defined( $zfs_stats[$kstat_int] ) && (!$kstat_matched)) {
+						my $kstat_int     = 0;
+						my $kstat_matched = 0;
+						while ( defined( $zfs_stats[$kstat_int] ) && ( !$kstat_matched ) ) {
 							if ( $zfs_stats[$kstat_int] =~ /^kstat\.zfs\..*dataset.objset\-.*\: $zfs_key/ ) {
-								$kstat_matched=1;
-								my $zfs_stat_base=$zfs_stats[$kstat_int];
-								$zfs_stat_base=~s/\.dataset\_name\:.*$//;
-								( $disk_info->{rreqs} ) = grep(/^$zfs_stat_base\.reads/, @zfs_stats);
-								( $disk_info->{wreqs} ) = grep(/^$zfs_stat_base\.writes/, @zfs_stats);
-								( $disk_info->{wbytes} ) = grep(/^$zfs_stat_base\.nwritten/, @zfs_stats);
-								( $disk_info->{rbytes} ) = grep(/^$zfs_stat_base\.nread/, @zfs_stats);
-								$disk_info->{rreqs}=~s/^.*\:[\ \t]//;
-								$disk_info->{wreqs}=~s/^.*\:[\ \t]//;
-								$disk_info->{rbytes}=~s/^.*\:[\ \t]//;
-								$disk_info->{wbytes}=~s/^.*\:[\ \t]//;
+								$kstat_matched = 1;
+								my $zfs_stat_base = $zfs_stats[$kstat_int];
+								$zfs_stat_base =~ s/\.dataset\_name\:.*$//;
+								( $disk_info->{rreqs} )  = grep( /^$zfs_stat_base\.reads/,    @zfs_stats );
+								( $disk_info->{wreqs} )  = grep( /^$zfs_stat_base\.writes/,   @zfs_stats );
+								( $disk_info->{wbytes} ) = grep( /^$zfs_stat_base\.nwritten/, @zfs_stats );
+								( $disk_info->{rbytes} ) = grep( /^$zfs_stat_base\.nread/,    @zfs_stats );
+								$disk_info->{rreqs}  =~ s/^.*\:[\ \t]//;
+								$disk_info->{wreqs}  =~ s/^.*\:[\ \t]//;
+								$disk_info->{rbytes} =~ s/^.*\:[\ \t]//;
+								$disk_info->{wbytes} =~ s/^.*\:[\ \t]//;
 
-								$vm_info->{rreqs}+=$disk_info->{rreqs};
-								$vm_info->{rbytes}+=$disk_info->{rbytes};
-								$vm_info->{wreqs}+=$disk_info->{rreqs};
-								$vm_info->{wbytes}+=$disk_info->{rbytes};
+								$vm_info->{rreqs}  += $disk_info->{rreqs};
+								$vm_info->{rbytes} += $disk_info->{rbytes};
+								$vm_info->{wreqs}  += $disk_info->{rreqs};
+								$vm_info->{wbytes} += $disk_info->{rbytes};
 							}
 
 							$kstat_int++;
 						}
 
-						$zfs_key_matched=1;
+						$zfs_key_matched = 1;
 					}
 				}
-				if (!$zfs_key_matched) {
+				if ( !$zfs_key_matched ) {
 					$disk_info->{on_disk} = $size;
 					$disk_info->{in_use}  = $size;
 				}
 
-				$vm_info->{disk_alloc} += $disk_info->{alloc};
+				$vm_info->{disk_alloc}   += $disk_info->{alloc};
 				$vm_info->{disk_on_disk} += $disk_info->{on_disk};
-				$vm_info->{disk_in_use} += $disk_info->{in_use};
+				$vm_info->{disk_in_use}  += $disk_info->{in_use};
 
 				$vm_info->{disks}{$disk_name} = $disk_info;
 			}
