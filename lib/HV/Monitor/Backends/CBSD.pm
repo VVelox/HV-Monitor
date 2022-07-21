@@ -195,9 +195,12 @@ sub run {
 		};
 
 		# convert for megabytes to kilobytes
-		if (defined($vm_info->{mem_alloc}) && $vm_info->{mem_alloc}=~/^[0-9]+$/) {
-			$vm_info->{mem_alloc} = $vm_info->{mem_alloc} * 1024;
+		if ( defined( $vm_info->{mem_alloc} ) && $vm_info->{mem_alloc} =~ /^[0-9]+$/ ) {
+			$vm_info->{mem_alloc} = $vm_info->{mem_alloc} * 1024 * 1024;
 		}
+
+		$vm_info->{rss} = $vm_info->{rss} * 1024;
+		$vm_info->{vsz} = $vm_info->{rss} * 1024;
 
 		if ( $status =~ /^On/ ) {
 			$vm_info->{status_int} = 1;

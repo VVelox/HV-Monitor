@@ -256,6 +256,11 @@ sub run {
 			};
 
 			$vm_info->{rss} = $domstats->{'balloon.rss'};
+
+			# convert to bytes for easier display
+			$vm_info->{rss}       = $vm_info->{rss} * 1024;
+			$vm_info->{vsz}       = $vm_info->{rss} * 1024;
+			$vm_info->{mem_alloc} = $vm_info * 1024;
 		}
 
 		#
