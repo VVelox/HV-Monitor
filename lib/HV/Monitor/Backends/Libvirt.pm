@@ -192,8 +192,14 @@ sub run {
 			disks        => {},
 			freqs        => 0,
 			ftime        => 0,
-		};
-		$vm_info->{mem_alloc} = $vm_info * 1024;
+					   };
+		# for some damned reason it reports bytes if running
+		# as compared to kilobytesif in state 5
+		if ($vm->{status_int} == 5) {
+			$vm_info->{mem_alloc} = $vm_info * 1024;
+		}else {
+			$vm_info->{mem_alloc} = $vm_info;
+		}
 
 		# https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainState
 		# VIR_DOMAIN_NOSTATE 	= 	0 (0x0) 	no state
@@ -357,7 +363,11 @@ sub run {
 			$vm_info->{disks}{ $domstats->{ 'block.' . $block_int . '.name' } } = $disk_info;
 
 			# skip adding ISO files to the VM total, these are likely used multiple times
-			if ( $domstats->{ 'block.' . $block_int . '.path' } !~ /\.[Ii][Ss][Oo]$/ ) {
+			if ( $domstats->{ 'block.' . $block_int . '.path' } !~ /\.[Ii][Ss][Oo]$/
+				 && defined($disk_info->{alloc})
+				 && defined($disk_info->{in_use})
+				 && defined($disk_info->{on_disk})
+				) {
 				$vm_info->{disk_alloc}   += $disk_info->{alloc};
 				$vm_info->{disk_in_use}  += $disk_info->{in_use};
 				$vm_info->{disk_on_disk} += $disk_info->{on_disk};
