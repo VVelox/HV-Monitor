@@ -193,6 +193,7 @@ sub run {
 			freqs        => 0,
 			ftime        => 0,
 		};
+		$vm_info->{mem_alloc} = $vm_info * 1024;
 
 		# https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainState
 		# VIR_DOMAIN_NOSTATE 	= 	0 (0x0) 	no state
@@ -269,8 +270,7 @@ sub run {
 			else {
 				$vm_info->{rss} = 0;
 			}
-			$vm_info->{vsz}       = $vm_info->{rss} * 1024;
-			$vm_info->{mem_alloc} = $vm_info * 1024;
+			$vm_info->{vsz} = $vm_info->{rss} * 1024;
 		}
 
 		#
