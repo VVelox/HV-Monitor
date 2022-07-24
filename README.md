@@ -62,7 +62,7 @@ these.
 | State       | Int | Desc                                |
 |-------------|-----|-------------------------------------|
 | NOSTATE     | 0   | no state                            |
-| RUNNING     | 1   | is running                          |
+| RUNNING     | 1   | is running / generic on             |
 | BLOCKED     | 2   | is blocked on resource              |
 | PAUSED      | 3   | is paused by user                   |
 | SHUTDOWN    | 4   | is being shut down                  |
@@ -70,7 +70,8 @@ these.
 | CRASHED     | 6   | is crashed                          |
 | PMSUSPENDED | 7   | suspended by guest power management |
 | OFF         | 8   | Generic off                         |
-| UNKNOWN     | 9   | Unknown                             |
+| MAINTENANCE | 9   | Maintenance                         |
+| UNKNOWN     | 10  | Unknown                             |
 
 Disk hash is as below.
 

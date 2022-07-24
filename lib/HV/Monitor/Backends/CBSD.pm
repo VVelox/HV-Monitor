@@ -306,13 +306,13 @@ sub run {
 
 		}
 		elsif ( $status =~ /^[Oo][Ff][Ff]/ ) {
-			$vm_info->{status_int} = 5;
+			$vm_info->{status_int} = 8;
 			$return_hash->{totals}{off}++;
 		}
 		else {
 			# CBSD also has some mode called maintenance and slave,
 			# but it is very unclear what those are
-			$vm_info->{status_int} = 8;
+			$vm_info->{status_int} = 9;
 			$return_hash->{totals}{unknown}++;
 		}
 
