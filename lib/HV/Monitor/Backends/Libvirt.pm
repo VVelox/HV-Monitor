@@ -142,7 +142,7 @@ sub run {
 
 	foreach my $vm (@VMs) {
 
-		my $domstats_raw   = `virsh domstats $vm --nowait`;
+		my $domstats_raw   = `virsh domstats $vm`;
 		my $domstats       = {};
 		my @domstats_split = grep( !/^Domain/, grep( !/^[\ \t]*$/, split( /\n/, $domstats_raw ) ) );
 		foreach my $line (@domstats_split) {
