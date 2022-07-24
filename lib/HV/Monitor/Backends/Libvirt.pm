@@ -194,14 +194,7 @@ sub run {
 			ftime        => 0,
 		};
 
-		# for some damned reason it reports bytes if running
-		# as compared to kilobytesif in state 5
-		if ( $vm->{status_int} == 5 ) {
-			$vm_info->{mem_alloc} = $vm_info->{mem_alloc} * 1024;
-		}
-		else {
-			$vm_info->{mem_alloc} = $vm_info->{mem_alloc};
-		}
+		$vm_info->{mem_alloc} = $vm_info->{mem_alloc} * 1024;
 
 		# https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainState
 		# VIR_DOMAIN_NOSTATE 	= 	0 (0x0) 	no state
