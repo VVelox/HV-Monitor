@@ -133,6 +133,8 @@ sub run {
 			'blocked'     => 0,
 			'nostate'     => 0,
 			'pmsuspended' => 0,
+			'freqs'       => 0,
+			'ftime'       => 0,
 		}
 	};
 
@@ -143,7 +145,7 @@ sub run {
 		'nivcsw',   'systime',    'vsz',         'etimes',     'majflt', 'inblk',
 		'nswap',    'disk_alloc', 'disk_in_use', 'rbytes',     'rtime',  'rreqs',
 		'wbytes',   'wreqs',      'ftime',       'freqs',      'wtime',  'disk_on_disk',
-		'snaps',
+		'snaps',    'freqs',      'ftime'
 	);
 
 	my @bls_split = split( /\n/, $bls_raw );

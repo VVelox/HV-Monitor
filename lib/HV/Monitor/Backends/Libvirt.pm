@@ -128,6 +128,8 @@ sub run {
 			'blocked'     => 0,
 			'nostate'     => 0,
 			'pmsuspended' => 0,
+			'freqs'       => 0,
+			'ftime'       => 0,
 		}
 	};
 
@@ -138,6 +140,7 @@ sub run {
 		'nivcsw',   'systime',    'vsz',         'etimes',     'majflt', 'inblk',
 		'nswap',    'disk_alloc', 'disk_in_use', 'rbytes',     'rtime',  'rreqs',
 		'wbytes',   'wreqs',      'ftime',       'freqs',      'wtime',  'disk_on_disk',
+		'ftime',    'freqs'
 	);
 
 	foreach my $vm (@VMs) {
@@ -187,6 +190,8 @@ sub run {
 			disk_in_use  => 0,
 			disk_on_disk => 0,
 			disks        => {},
+			freqs        => 0,
+			ftime        => 0,
 		};
 
 		# https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainState
@@ -258,9 +263,10 @@ sub run {
 			$vm_info->{rss} = $domstats->{'balloon.rss'};
 
 			# convert to bytes for easier display
-			if (defined($vm_info->{rss})) {
-				$vm_info->{rss}       = $vm_info->{rss} * 1024;
-			}else {
+			if ( defined( $vm_info->{rss} ) ) {
+				$vm_info->{rss} = $vm_info->{rss} * 1024;
+			}
+			else {
 				$vm_info->{rss} = 0;
 			}
 			$vm_info->{vsz}       = $vm_info->{rss} * 1024;
