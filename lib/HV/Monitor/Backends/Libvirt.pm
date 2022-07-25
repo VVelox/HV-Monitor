@@ -336,23 +336,23 @@ sub run {
 			};
 
 			if ( defined( $domstats->{ 'block.' . $block_int . '.rd.bytes' } ) ) {
-				$vm_info->{rbytes} += $domstats->{ 'block.' . $block_int . '.rd.bytes' };
-				$vm_info->{rtime}  += $domstats->{ 'block.' . $block_int . '.rd.times' };
-				$vm_info->{rreqs}  += $domstats->{ 'block.' . $block_int . '.rd.reqs' };
-				$vm_info->{wbytes} += $domstats->{ 'block.' . $block_int . '.wr.bytes' };
-				$vm_info->{wtime}  += $domstats->{ 'block.' . $block_int . '.wr.times' };
-				$vm_info->{wreqs}  += $domstats->{ 'block.' . $block_int . '.wr.reqs' };
-				$vm_info->{ftime}  += $domstats->{ 'block.' . $block_int . '.fl.times' };
-				$vm_info->{freqs}  += $domstats->{ 'block.' . $block_int . '.fl.reqs' };
-
 				$disk_info->{rbytes} = $domstats->{ 'block.' . $block_int . '.rd.bytes' };
-				$disk_info->{rtime}  = $domstats->{ 'block.' . $block_int . '.rd.times' };
+				$disk_info->{rtime}  = $domstats->{ 'block.' . $block_int . '.rd.times' } / 1000000;
 				$disk_info->{rreqs}  = $domstats->{ 'block.' . $block_int . '.rd.reqs' };
 				$disk_info->{wbytes} = $domstats->{ 'block.' . $block_int . '.wr.bytes' };
-				$disk_info->{wtime}  = $domstats->{ 'block.' . $block_int . '.wr.times' };
+				$disk_info->{wtime}  = $domstats->{ 'block.' . $block_int . '.wr.times' } / 1000000;
 				$disk_info->{wreqs}  = $domstats->{ 'block.' . $block_int . '.wr.reqs' };
-				$disk_info->{ftime}  = $domstats->{ 'block.' . $block_int . '.fl.times' };
+				$disk_info->{ftime}  = $domstats->{ 'block.' . $block_int . '.fl.times' } / 1000000;
 				$disk_info->{freqs}  = $domstats->{ 'block.' . $block_int . '.fl.reqs' };
+
+				$vm_info->{rbytes} += $domstats->{ 'block.' . $block_int . '.rd.bytes' };
+				$vm_info->{rtime}  += $disk_info->{rtime};
+				$vm_info->{rreqs}  += $domstats->{ 'block.' . $block_int . '.rd.reqs' };
+				$vm_info->{wbytes} += $domstats->{ 'block.' . $block_int . '.wr.bytes' };
+				$vm_info->{wtime}  += $disk_info->{wtime};
+				$vm_info->{wreqs}  += $domstats->{ 'block.' . $block_int . '.wr.reqs' };
+				$vm_info->{ftime}  += $disk_info->{ftime};
+				$vm_info->{freqs}  += $domstats->{ 'block.' . $block_int . '.fl.reqs' };
 			}
 
 			$vm_info->{disks}{ $domstats->{ 'block.' . $block_int . '.name' } } = $disk_info;
