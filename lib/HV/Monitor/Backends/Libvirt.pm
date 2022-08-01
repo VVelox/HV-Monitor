@@ -130,6 +130,15 @@ sub run {
 			'pmsuspended' => 0,
 			'freqs'       => 0,
 			'ftime'       => 0,
+			'ipkts'       => 0,
+			'ierrs'       => 0,
+			'ibytes'      => 0,
+			'idrop'       => 0,
+			'opkts'       => 0,
+			'oerrs'       => 0,
+			'obytes'      => 0,
+			'coll'        => 0,
+			'odrop'       => 0,
 		}
 	};
 
@@ -140,7 +149,8 @@ sub run {
 		'nivcsw',   'systime',    'vsz',         'etimes',     'majflt', 'inblk',
 		'nswap',    'disk_alloc', 'disk_in_use', 'rbytes',     'rtime',  'rreqs',
 		'wbytes',   'wreqs',      'ftime',       'freqs',      'wtime',  'disk_on_disk',
-		'ftime',    'freqs'
+		'snaps',    'freqs',      'ftime',       'ipkts',      'ierrs',  'ibytes',
+		'idrop',    'opkts',      'oerrs',       'obytes',     'coll',   'odrop'
 	);
 
 	foreach my $vm (@VMs) {
@@ -192,6 +202,15 @@ sub run {
 			disks        => {},
 			freqs        => 0,
 			ftime        => 0,
+			ipkts        => 0,
+			ierrs        => 0,
+			ibytes       => 0,
+			idrop        => 0,
+			opkts        => 0,
+			oerrs        => 0,
+			obytes       => 0,
+			coll         => 0,
+			odrop        => 0,
 		};
 
 		$vm_info->{mem_alloc} = $vm_info->{mem_alloc} * 1024;
@@ -293,6 +312,16 @@ sub run {
 				odrop  => $domstats->{ 'net.' . $nic_int . '.tx.drop' },
 				coll   => 0,
 			};
+
+			$vm_info->{ipkts}  = $nic_info->{ipkts};
+			$vm_info->{ierrs}  = $nic_info->{ierrs};
+			$vm_info->{ibytes} = $nic_info->{ibytes};
+			$vm_info->{idrop}  = $nic_info->{odrop};
+			$vm_info->{opkts}  = $nic_info->{opkts};
+			$vm_info->{oerrs}  = $nic_info->{oerrs};
+			$vm_info->{obytes} = $nic_info->{obytes};
+			$vm_info->{odrop}  = $nic_info->{odrop};
+			$vm_info->{coll}   = $nic_info->{coll};
 
 			# get the mac and parent
 			my $netdev = 'net' . $nic_int;

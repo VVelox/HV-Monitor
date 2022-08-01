@@ -41,6 +41,17 @@ These are all relevant to `.data` in the JSON.
 - usertime :: Accumulated user CPU time.
 - vsz :: Virtual memory size in Kbytes.
 - disks :: A hash of disk info.
+- rbtyes :: Total bytes read.
+- rtime :: Total time in ms spent on reads.
+- rreqs :: Total read requests.
+- wbytes :: Total bytes written.
+- wreqs :: Total write requests.
+- ftime :: Total time in ms spent on flushes.
+- freqs :: Total flush requests.
+- disk_alloc :: Number of bytes allocated to for all disks.
+- disk_in_use :: Number of bytes in use by by all disks.
+- disk_on_disk :: Number of bytes in use on all disks. For qcow, this
+  will be larger than in_use as the file includes snapshots
 
 The interface hash stats are as below.
 
@@ -77,10 +88,12 @@ Disk hash is as below.
 
 - alloc :: Number of bytes allocated to a disk.
 - in_use :: Number of bytes in use by the disk.
+- on_disk :: Number of bytes in use on the disk. For qcow, this will
+  be larger than in_use as the file includes snapshots
 - rbtyes :: Total bytes read.
-- rtime :: Total time in ns spent on reads.
+- rtime :: Total time in ms spent on reads.
 - rreqs :: Total read requests.
 - wbytes :: Total bytes written.
 - wreqs :: Total write requests.
-- ftime :: Total time in ns spent on flushes.
+- ftime :: Total time in ms spent on flushes.
 - freqs :: Total flush requests.

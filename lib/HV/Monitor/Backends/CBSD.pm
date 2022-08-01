@@ -135,6 +135,15 @@ sub run {
 			'pmsuspended' => 0,
 			'freqs'       => 0,
 			'ftime'       => 0,
+			'ipkts'       => 0,
+			'ierrs'       => 0,
+			'ibytes'      => 0,
+			'idrop'       => 0,
+			'opkts'       => 0,
+			'oerrs'       => 0,
+			'obytes'      => 0,
+			'coll'        => 0,
+			'odrop'       => 0,
 		}
 	};
 
@@ -145,7 +154,8 @@ sub run {
 		'nivcsw',   'systime',    'vsz',         'etimes',     'majflt', 'inblk',
 		'nswap',    'disk_alloc', 'disk_in_use', 'rbytes',     'rtime',  'rreqs',
 		'wbytes',   'wreqs',      'ftime',       'freqs',      'wtime',  'disk_on_disk',
-		'snaps',    'freqs',      'ftime'
+		'snaps',    'freqs',      'ftime',       'ipkts',      'ierrs',  'ibytes',
+		'idrop',    'opkts',      'oerrs',       'obytes',     'coll',   'odrop'
 	);
 
 	my @bls_split = split( /\n/, $bls_raw );
@@ -194,6 +204,15 @@ sub run {
 			wreqs        => 0,
 			wtime        => 0,
 			freqs        => 0,
+			ipkts        => 0,
+			ierrs        => 0,
+			ibytes       => 0,
+			idrop        => 0,
+			opkts        => 0,
+			oerrs        => 0,
+			obytes       => 0,
+			coll         => 0,
+			odrop        => 0,
 		};
 
 		# convert for megabytes to kilobytes
@@ -296,6 +315,7 @@ sub run {
 						foreach my $current_stat (@add_stats) {
 							if ( $if_stats->{$current_stat} =~ /^[0-9]+$/ ) {
 								$vm_info->{ifs}{$nic}{$current_stat} += $if_stats->{$current_stat};
+								$vm_info->{$current_stat} += $if_stats->{$current_stat};
 							}
 						}
 
