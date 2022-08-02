@@ -22,6 +22,8 @@ my %WriteMakefileArgs = (
 	PREREQ_PM => {
 		'Module::List' => '0.004',
 		'JSON'         => '2.97.001',
+		'MIME::Base64' => '3.16',
+		'Gzip::Faster' => '0.21',
 	},
 	dist       => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
 	clean      => { FILES    => 'HV-Monitor-*' },
