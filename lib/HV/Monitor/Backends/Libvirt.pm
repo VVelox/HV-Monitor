@@ -12,11 +12,11 @@ HV::Monitor::Backends::Libvirt - Libvirt support for HV::Monitor
 
 =head1 VERSION
 
-Version 0.0.1
+Version 0.0.2
 
 =cut
 
-our $VERSION = '0.0.1';
+our $VERSION = '0.0.2';
 
 =head1 SYNOPSIS
 
@@ -387,7 +387,8 @@ sub run {
 			$vm_info->{disks}{ $domstats->{ 'block.' . $block_int . '.name' } } = $disk_info;
 
 			# skip adding ISO files to the VM total, these are likely used multiple times
-			if (   $domstats->{ 'block.' . $block_int . '.path' } !~ /\.[Ii][Ss][Oo]$/
+			if (   defined( $domstats->{ 'block.' . $block_int . '.path' } )
+				&& $domstats->{ 'block.' . $block_int . '.path' } !~ /\.[Ii][Ss][Oo]$/
 				&& defined( $disk_info->{alloc} )
 				&& defined( $disk_info->{in_use} )
 				&& defined( $disk_info->{on_disk} ) )
