@@ -339,6 +339,33 @@ sub run {
 					}
 				}
 			}
+			else {
+				# looks like we did not find one that appears to be a JSON style one, so now try for the CSV style
+				@net_line
+					= grep( /virtio-net-pci/, grep( /mac/, grep( /\=$netdev\,/, @hv_args ) ) );
+
+				# if we failed, now check for it with $netdev at the end of the arg
+				if ( !defined( $net_line[0] ) ) {
+					@net_line
+						= grep( /virtio-net-pci/, grep( /mac/, grep( /\=$netdev$/, @hv_args ) ) );
+				}
+
+				if ( defined( $net_line[0] ) ) {
+					my @net_line_split = split( /\,/, $net_line[0] );
+					foreach my $net_line_arg (@net_line_split) {
+						my ( $net_line_key, $net_line_value ) = split( /\=/, $net_line_arg, 2 );
+						if (   defined($net_line_key)
+							&& defined($net_line_value)
+							&& $net_line_value ne ''
+							&& $net_line_key ne '' )
+						{
+							if ( $net_line_key eq 'mac' ) {
+								$nic_info->{mac} = $net_line_value;
+							}
+						}
+					}
+				}
+			}
 
 			$vm_info->{ifs}{ 'nic' . $nic_int } = $nic_info;
 
