@@ -12,11 +12,11 @@ HV::Monitor::Backends::Libvirt - Libvirt support for HV::Monitor
 
 =head1 VERSION
 
-Version 0.0.3
+Version 0.0.4
 
 =cut
 
-our $VERSION = '0.0.3';
+our $VERSION = '0.0.4';
 
 =head1 SYNOPSIS
 
@@ -230,6 +230,7 @@ sub run {
 			|| $domstats->{'state.state'} eq 4 )
 		{
 			my $pid = `ps ax o pid,args | grep qemu | grep ' -name '| grep 'guest='$vm','`;
+			$pid =~ s/^[\ \t]*//;
 			chomp($pid);
 			$pid =~ s/^[\ \t]*//;
 			my $command = $pid;
@@ -239,6 +240,7 @@ sub run {
 			@hv_args = split( /\n/, `cat /proc/$pid/cmdline | strings` );
 
 			my $ps_info = `ps -q $pid --no-headers -o pcpu,pmem,etimes,vsz,pri,nice`;
+			$ps_info =~ s/^[\ \t]*//;
 			chomp($ps_info);
 			$ps_info =~ s/^[\ \t]*//;
 			$ps_info =~ s/[\ \t]*$//;
