@@ -6,7 +6,6 @@ t/00-load.t
 t/manifest.t
 t/pod-coverage.t
 t/pod.t
-bin/hv_monitor
 lib/HV/Monitor/Backends/CBSD.pm
 lib/HV/Monitor/Backends/Libvirt.pm
 README.md
