@@ -81,6 +81,10 @@ if ($help) {
         pod2usage( -exitval => 255, -verbose => 2, -output => \*STDOUT, );
 }
 
+if ($version) {
+	exit 255;
+}
+
 my $hm = HV::Monitor->new( { backend => $backend } );
 
 eval { $hm->load; };
