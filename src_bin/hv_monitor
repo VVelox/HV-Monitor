@@ -50,9 +50,6 @@ sub version {
 	print 'hv_monitor v. ' . $HV::Monitor::VERSION . "\n";
 }
 
-sub help {
-	pod2usage( -exitval => 255, -verbose => 2, -output => \*STDOUT, );
-}
 
 my $backend;
 if ( $^O eq 'freebsd' ) {
@@ -75,6 +72,14 @@ GetOptions(
 	'b=s'     => \$backend,
 	'c'       => \$compress,
 );
+
+if ($version) {
+		print 'hv_monitor v. ' . $HV::Monitor::VERSION . "\n";
+}
+
+if ($help) {
+        pod2usage( -exitval => 255, -verbose => 2, -output => \*STDOUT, );
+}
 
 my $hm = HV::Monitor->new( { backend => $backend } );
 
