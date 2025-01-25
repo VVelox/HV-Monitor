@@ -34,3 +34,4 @@ inc/
 /pm_to_blib
 /*.zip
 bin/hv_monitor
+bin/.exists
