@@ -143,5 +143,5 @@ if ( !$quiet ) {
 
 if ($write) {
 	write_file( $output_file_base . '.snmp', $compressed );
-	write_file( $output_file_base,           $date );
+	write_file( $output_file_base,           $data );
 }
