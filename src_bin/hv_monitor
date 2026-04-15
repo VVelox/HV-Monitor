@@ -86,6 +86,8 @@ my $help             = 0;
 my $version          = 0;
 my $compress         = 0;
 my $output_file_base = '/var/cache/hv_monitor.json';
+my $quiet;
+my $write;
 Getopt::Long::Configure('no_ignore_case');
 Getopt::Long::Configure('bundling');
 GetOptions(
