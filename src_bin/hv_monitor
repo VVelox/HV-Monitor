@@ -34,6 +34,11 @@ Defaults are as below.
 Compress the output using gzip and base64 encoded so it
 can be transmitted via SNMP with out issue.
 
+This only reflects what is printed to STDOUT.
+
+/var/cache/hv_monitor.json.snmp will always be created
+as base64 encoded gzipped JSON.
+
 =head2 -w
 
 Write the data out to files as well.
@@ -126,9 +131,8 @@ if ($@) {
 
 my $data = encode_json( $hm->run );
 
-if ( !$compress ) {
+if ( !$compress && !$quiet ) {
 	print $data. "\n";
-	exit;
 }
 
 # compress and write to the cache file for it
