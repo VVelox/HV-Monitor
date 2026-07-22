@@ -3,7 +3,6 @@ package HV::Monitor::Backends::Libvirt;
 use 5.006;
 use strict;
 use warnings;
-use JSON;
 use File::Slurp qw(read_file);
 
 =head1 NAME
@@ -149,8 +148,8 @@ sub run {
 		'nivcsw',   'systime',    'vsz',         'etimes',     'majflt', 'inblk',
 		'nswap',    'disk_alloc', 'disk_in_use', 'rbytes',     'rtime',  'rreqs',
 		'wbytes',   'wreqs',      'ftime',       'freqs',      'wtime',  'disk_on_disk',
-		'snaps',    'freqs',      'ftime',       'ipkts',      'ierrs',  'ibytes',
-		'idrop',    'opkts',      'oerrs',       'obytes',     'coll',   'odrop'
+		'ipkts',    'ierrs',      'ibytes',      'idrop',      'opkts',  'oerrs',
+		'obytes',   'coll',       'odrop'
 	);
 
 	foreach my $vm (@VMs) {
@@ -224,7 +223,6 @@ sub run {
 		# VIR_DOMAIN_SHUTOFF 	= 	5 (0x5) 	the domain is shut off
 		# VIR_DOMAIN_CRASHED 	= 	6 (0x6) 	the domain is crashed
 		# VIR_DOMAIN_PMSUSPENDED 	= 	7 (0x7) 	the domain is suspended by guest power management
-		my @hv_args;
 		if (   $domstats->{'state.state'} eq 1
 			|| $domstats->{'state.state'} eq 3
 			|| $domstats->{'state.state'} eq 4 )
@@ -237,15 +235,15 @@ sub run {
 			$pid     =~ s/[\ \t]+.*$//;
 			$command =~ s/^[0-9]+[\ \t]+//;
 
-			@hv_args = split( /\n/, `cat /proc/$pid/cmdline | strings` );
-
 			my $ps_info = `ps -q $pid --no-headers -o pcpu,pmem,etimes,vsz,pri,nice`;
 			$ps_info =~ s/^[\ \t]*//;
 			chomp($ps_info);
 			$ps_info =~ s/^[\ \t]*//;
 			$ps_info =~ s/[\ \t]*$//;
-			( $vm_info->{pcpu}, $vm_info->{pmem}, $vm_info->{etimes}, $vm_info->{vsz}, $vm_info->{nice} )
-				= split( /[\ \t]+/, $ps_info );
+			(
+				$vm_info->{pcpu}, $vm_info->{pmem}, $vm_info->{etimes},
+				$vm_info->{vsz},  $vm_info->{pri},  $vm_info->{nice}
+			) = split( /[\ \t]+/, $ps_info );
 
 			my $console_type    = 'unknown';
 			my $console_options = $command;
@@ -264,7 +262,7 @@ sub run {
 			eval {
 				my $proc_stat_raw = read_file( '/proc/' . $pid . '/stat' );
 				my @proc_stat     = split( /[\ \t]+/, $proc_stat_raw );
-				$vm_info->{majflt}   = $proc_stat[10];
+				$vm_info->{majflt}   = $proc_stat[11];
 				$vm_info->{minflt}   = $proc_stat[9];
 				$vm_info->{usertime} = $proc_stat[13] / $hz;
 				$vm_info->{systime}  = $proc_stat[14] / $hz;
@@ -292,7 +290,32 @@ sub run {
 			else {
 				$vm_info->{rss} = 0;
 			}
-			$vm_info->{vsz} = $vm_info->{rss} * 1024;
+		}
+
+		#
+		# grab the interface config for mac/parent lookups, in the same
+		# device order as the net.* entries from domstats
+		#
+		my @iflist;
+		foreach my $ifline ( split( /\n/, `virsh domiflist $vm` ) ) {
+			$ifline =~ s/^[\ \t]*//;
+			$ifline =~ s/[\ \t]*$//;
+			if (   $ifline =~ /^$/
+				|| $ifline =~ /^Interface[\ \t]/
+				|| $ifline =~ /^-+$/ )
+			{
+				next;
+			}
+			my ( $if_name, $if_type, $if_source, $if_model, $if_mac ) = split( /[\ \t]+/, $ifline );
+			push(
+				@iflist,
+				{
+					name   => $if_name,
+					type   => $if_type,
+					source => $if_source,
+					mac    => $if_mac,
+				}
+			);
 		}
 
 		#
@@ -315,56 +338,39 @@ sub run {
 				coll   => 0,
 			};
 
-			$vm_info->{ipkts}  = $nic_info->{ipkts};
-			$vm_info->{ierrs}  = $nic_info->{ierrs};
-			$vm_info->{ibytes} = $nic_info->{ibytes};
-			$vm_info->{idrop}  = $nic_info->{odrop};
-			$vm_info->{opkts}  = $nic_info->{opkts};
-			$vm_info->{oerrs}  = $nic_info->{oerrs};
-			$vm_info->{obytes} = $nic_info->{obytes};
-			$vm_info->{odrop}  = $nic_info->{odrop};
-			$vm_info->{coll}   = $nic_info->{coll};
+			$vm_info->{ipkts}  += $nic_info->{ipkts};
+			$vm_info->{ierrs}  += $nic_info->{ierrs};
+			$vm_info->{ibytes} += $nic_info->{ibytes};
+			$vm_info->{idrop}  += $nic_info->{idrop};
+			$vm_info->{opkts}  += $nic_info->{opkts};
+			$vm_info->{oerrs}  += $nic_info->{oerrs};
+			$vm_info->{obytes} += $nic_info->{obytes};
+			$vm_info->{odrop}  += $nic_info->{odrop};
+			$vm_info->{coll}   += $nic_info->{coll};
 
-			# get the mac and parent
-			my $netdev = 'net' . $nic_int;
-			my @net_line
-				= grep( /\"mac\"/, grep( /\"netdev\"/, grep( /^[\ \t]*{.*\"$netdev\".*\}[\ \t]*$/, @hv_args ) ) );
-			if ( defined( $net_line[0] ) ) {
-				eval {
-					my $json = decode_json( $net_line[0] );
-					$nic_info->{mac} = $json->{mac};
-					$json->{netdev} =~ s/^[a-zA-Z]+//;
-					if ( defined( $net_list[ $json->{netdev} ] ) ) {
-						if ( defined( $net_cache->{ $net_list[ $json->{netdev} ] } ) ) {
-							$nic_info->{parent} = $net_cache->{ $net_list[ $json->{netdev} ] };
-						}
-					}
+			# get the mac and parent, matching by interface name and falling
+			# back to device order if that fails
+			my $iflist_entry;
+			foreach my $entry (@iflist) {
+				if ( defined( $entry->{name} ) && $entry->{name} eq $nic_info->{if} ) {
+					$iflist_entry = $entry;
 				}
 			}
-			else {
-				# looks like we did not find one that appears to be a JSON style one, so now try for the CSV style
-				@net_line
-					= grep( /virtio-net-pci/, grep( /mac/, grep( /\=$netdev\,/, @hv_args ) ) );
-
-				# if we failed, now check for it with $netdev at the end of the arg
-				if ( !defined( $net_line[0] ) ) {
-					@net_line
-						= grep( /virtio-net-pci/, grep( /mac/, grep( /\=$netdev$/, @hv_args ) ) );
+			if ( !defined($iflist_entry) && defined( $iflist[$nic_int] ) ) {
+				$iflist_entry = $iflist[$nic_int];
+			}
+			if ( defined($iflist_entry) ) {
+				if ( defined( $iflist_entry->{mac} ) ) {
+					$nic_info->{mac} = $iflist_entry->{mac};
 				}
-
-				if ( defined( $net_line[0] ) ) {
-					my @net_line_split = split( /\,/, $net_line[0] );
-					foreach my $net_line_arg (@net_line_split) {
-						my ( $net_line_key, $net_line_value ) = split( /\=/, $net_line_arg, 2 );
-						if (   defined($net_line_key)
-							&& defined($net_line_value)
-							&& $net_line_value ne ''
-							&& $net_line_key ne '' )
-						{
-							if ( $net_line_key eq 'mac' ) {
-								$nic_info->{mac} = $net_line_value;
-							}
-						}
+				if ( defined( $iflist_entry->{type} ) && defined( $iflist_entry->{source} ) ) {
+					if (   $iflist_entry->{type} eq 'network'
+						&& defined( $net_cache->{ $iflist_entry->{source} } ) )
+					{
+						$nic_info->{parent} = $net_cache->{ $iflist_entry->{source} };
+					}
+					elsif ( $iflist_entry->{type} eq 'bridge' || $iflist_entry->{type} eq 'direct' ) {
+						$nic_info->{parent} = $iflist_entry->{source};
 					}
 				}
 			}
